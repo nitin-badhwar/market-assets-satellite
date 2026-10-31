@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Assets Satellite Tracker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #2f81f7;
+      --success: #238636;
+      --danger: #da3633;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 24px;
+      line-height: 1.5;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 20px; font-weight: 600; }
+    .subtitle { font-size: 13px; color: var(--text-muted); }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .card-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+    .card-value { font-size: 24px; font-weight: 700; margin-top: 4px; font-family: var(--font-mono); }
+
+    .actions-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+    button, label.btn {
+      background-color: #21262d;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button:hover, label.btn:hover { background-color: #30363d; }
+    button.primary { background-color: var(--accent); border-color: rgba(255,255,255,0.1); color: #fff; }
+    button.primary:hover { opacity: 0.9; }
+    button.export { background-color: var(--success); border-color: rgba(255,255,255,0.1); color: #fff; }
+
+    input[type="file"] { display: none; }
+
+    .config-box {
+      background: #1c2128;
+      border: 1px solid #444c56;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .form-drawer {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      display: none;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 12px; color: var(--text-muted); }
+    input, select {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    input:focus, select:focus { outline: 1px solid var(--accent); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; text-align: left; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    th { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 11px; }
+    td.num { font-family: var(--font-mono); text-align: right; }
+    th.num { text-align: right; }
+    .badge {
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      background: #21262d;
+    }
+    .badge.MF { color: #58a6ff; }
+    .badge.Stocks { color: #7ee787; }
+    .badge.NPS { color: #f0883e; }
+    .del-btn { color: var(--danger); background: none; border: none; cursor: pointer; padding: 2px 6px; }
+    .status-pill {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div>
+      <h1>Portfolio Satellite: Market Assets</h1>
+      <div class="subtitle">Daily Mutual Fund, Stocks & NPS &bull; Syncs with Family Estate Vault</div>
+    </div>
+    <div style="font-size: 12px; color: var(--text-muted); text-align: right;">
+      <span class="status-pill" id="syncStatusPill" style="background: #e3b341;"></span>
+      <span id="syncStatus">Disconnected</span><br>
+      As of: <span id="currentDate"></span>
+    </div>
+  </header>
+
+  <!-- JSONbin.io Cloud Sync Settings -->
+  <div class="config-box" id="configDrawer">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+      <strong style="font-size: 14px;">Cloud Sync & Encryption Setup (JSONbin.io)</strong>
+      <button style="padding: 4px 10px; font-size: 11px;" onclick="toggleConfig()">Hide Settings</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>JSONbin Bin ID</label>
+        <input type="text" id="binId" placeholder="e.g. 660f...">
+      </div>
+      <div class="form-group">
+        <label>Master Key ($2a$10...)</label>
+        <input type="password" id="masterKey" placeholder="JSONbin Master Key">
+      </div>
+      <div class="form-group">
+        <label>Encryption Passphrase / PIN</label>
+        <input type="password" id="vaultPin" placeholder="AES Secret (Matches Vault)">
+      </div>
+    </div>
+    <div style="margin-top: 12px; display: flex; gap: 8px;">
+      <button class="primary" onclick="initCloudSync()">Connect & Pull Cloud Data</button>
+      <button onclick="saveConfigLocally()">Save Keys to Browser</button>
+    </div>
+  </div>
+
+  <!-- Portfolio Summaries -->
+  <div class="summary-grid">
+    <div class="card">
+      <div class="card-label">Total Portfolio Balance</div>
+      <div class="card-value" id="totalBalance">₹0.00</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Mutual Funds</div>
+      <div class="card-value" id="mfBalance">₹0.00</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Equity / Stocks</div>
+      <div class="card-value" id="stocksBalance">₹0.00</div>
+    </div>
+    <div class="card">
+      <div class="card-label">NPS Holdings</div>
+      <div class="card-value" id="npsBalance">₹0.00</div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions-bar">
+    <button class="primary" onclick="toggleForm()">+ Add Asset Manually</button>
+    <label class="btn">
+      Import CSV
+      <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSV(event)">
+    </label>
+    <label class="btn">
+      Parse Statement PDF
+      <input type="file" id="pdfFileInput" accept=".pdf" onchange="handlePDF(event)">
+    </label>
+    <button class="export" onclick="exportForMasterVault()">Export Projection for Vault (JSON)</button>
+    <button onclick="toggleConfig()">Cloud Config</button>
+  </div>
+
+  <!-- Manual Add Drawer -->
+  <div class="form-drawer" id="manualEntryDrawer">
+    <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px;">Add / Update Position</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Category</label>
+        <select id="assetCategory">
+          <option value="Mutual Fund">Mutual Fund</option>
+          <option value="Stocks">Stocks</option>
+          <option value="NPS">NPS</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Scheme / Stock Name</label>
+        <input type="text" id="assetName" placeholder="e.g. Parag Parikh Flexi Cap">
+      </div>
+      <div class="form-group">
+        <label>Folio / ISIN / PRAN</label>
+        <input type="text" id="assetIdentifier" placeholder="Identifier">
+      </div>
+      <div class="form-group">
+        <label>Owner / Profile Member</label>
+        <input type="text" id="assetOwner" placeholder="e.g. Self, Spouse, Father">
+      </div>
+      <div class="form-group">
+        <label>Units / Qty</label>
+        <input type="number" step="any" id="assetUnits" placeholder="0.000" oninput="calcVal()">
+      </div>
+      <div class="form-group">
+        <label>NAV / Price (₹)</label>
+        <input type="number" step="any" id="assetNAV" placeholder="0.00" oninput="calcVal()">
+      </div>
+      <div class="form-group">
+        <label>Valuation (₹)</label>
+        <input type="number" step="any" id="assetValuation" placeholder="0.00">
+      </div>
+    </div>
+    <div style="margin-top: 14px; display: flex; gap: 8px;">
+      <button class="primary" onclick="saveManualAsset()">Save & Sync Position</button>
+      <button onclick="toggleForm()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Holdings Grid -->
+  <div class="card" style="padding: 0; overflow-x: auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Scheme / Security Name</th>
+          <th>Identifier</th>
+          <th>Holder</th>
+          <th class="num">Units / Qty</th>
+          <th class="num">NAV / Price</th>
+          <th class="num">Valuation (₹)</th>
+          <th style="text-align:center;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="assetsTableBody">
+        <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding: 24px;">No holdings loaded. Configure cloud sync or add data.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+  let portfolio = [];
+  const LOCAL_CACHE = 'satellite_market_cache';
+  const CONFIG_STORE = 'satellite_jsonbin_config';
+
+  document.getElementById('currentDate').textContent = new Date().toISOString().split('T')[0];
+
+  // Load Saved Settings on Start
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedConf = JSON.parse(localStorage.getItem(CONFIG_STORE) || '{}');
+    if (savedConf.binId) document.getElementById('binId').value = savedConf.binId;
+    if (savedConf.masterKey) document.getElementById('masterKey').value = savedConf.masterKey;
+
+    const cachedData = localStorage.getItem(LOCAL_CACHE);
+    if (cachedData) {
+      portfolio = JSON.parse(cachedData);
+      render();
+    }
+  });
+
+  function formatINR(val) {
+    return '₹' + Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function toggleConfig() {
+    const el = document.getElementById('configDrawer');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function toggleForm() {
+    const el = document.getElementById('manualEntryDrawer');
+    el.style.display = el.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function calcVal() {
+    const units = parseFloat(document.getElementById('assetUnits').value) || 0;
+    const nav = parseFloat(document.getElementById('assetNAV').value) || 0;
+    if (units && nav) {
+      document.getElementById('assetValuation').value = (units * nav).toFixed(2);
+    }
+  }
+
+  function saveConfigLocally() {
+    const binId = document.getElementById('binId').value.trim();
+    const masterKey = document.getElementById('masterKey').value.trim();
+    localStorage.setItem(CONFIG_STORE, JSON.stringify({ binId, masterKey }));
+    alert('Bin ID & Key cached locally in browser.');
+  }
+
+  // Web Crypto AES-256-GCM
+  async function getKey(pin, salt) {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin), { name: "PBKDF2" }, false, ["deriveKey"]);
+    return crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  }
+
+  async function encryptData(plainText, pin) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await getKey(pin, salt);
+    const enc = new TextEncoder();
+    const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(plainText));
+    return {
+      ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+      iv: btoa(String.fromCharCode(...iv)),
+      salt: btoa(String.fromCharCode(...salt))
+    };
+  }
+
+  async function decryptData(cipherPackage, pin) {
+    const salt = Uint8Array.from(atob(cipherPackage.salt), c => c.charCodeAt(0));
+    const iv = Uint8Array.from(atob(cipherPackage.iv), c => c.charCodeAt(0));
+    const ciphertext = Uint8Array.from(atob(cipherPackage.ciphertext), c => c.charCodeAt(0));
+    const key = await getKey(pin, salt);
+    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+    return new TextDecoder().decode(decrypted);
+  }
+
+  // JSONbin Sync Operations
+  async function initCloudSync() {
+    const binId = document.getElementById('binId').value.trim();
+    const masterKey = document.getElementById('masterKey').value.trim();
+    const pin = document.getElementById('vaultPin').value.trim();
+
+    if (!binId || !masterKey) {
+      alert('Bin ID and Master Key are required.');
+      return;
+    }
+
+    setSyncStatus('Connecting...', '#e3b341');
+
+    try {
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+        headers: { 'X-Master-Key': masterKey }
+      });
+      if (!res.ok) throw new Error('Failed to fetch from JSONbin: ' + res.statusText);
+      const data = await res.json();
+
+      if (data.record && data.record.ciphertext) {
+        if (!pin) {
+          alert('Encrypted payload detected on cloud. Please enter your Passphrase/PIN.');
+          setSyncStatus('Locked (PIN Required)', '#da3633');
+          return;
+        }
+        const decryptedStr = await decryptData(data.record, pin);
+        portfolio = JSON.parse(decryptedStr);
+      } else if (Array.isArray(data.record)) {
+        portfolio = data.record;
+      }
+
+      localStorage.setItem(LOCAL_CACHE, JSON.stringify(portfolio));
+      render();
+      setSyncStatus('Connected & Synced', '#238636');
+      document.getElementById('configDrawer').style.display = 'none';
+    } catch (err) {
+      console.error(err);
+      setSyncStatus('Sync Error', '#da3633');
+      alert(err.message);
+    }
+  }
+
+  async function pushToCloud() {
+    const binId = document.getElementById('binId').value.trim();
+    const masterKey = document.getElementById('masterKey').value.trim();
+    const pin = document.getElementById('vaultPin').value.trim();
+
+    // Cache locally immediately
+    localStorage.setItem(LOCAL_CACHE, JSON.stringify(portfolio));
+    render();
+
+    if (!binId || !masterKey) return; // Works locally if no cloud config
+
+    setSyncStatus('Pushing to cloud...', '#e3b341');
+
+    try {
+      let bodyData = portfolio;
+      if (pin) {
+        bodyData = await encryptData(JSON.stringify(portfolio), pin);
+      }
+
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': masterKey
+        },
+        body: JSON.stringify(bodyData)
+      });
+
+      if (!res.ok) throw new Error('Cloud push failed');
+      setSyncStatus('Connected & Synced', '#238636');
+    } catch (err) {
+      console.error(err);
+      setSyncStatus('Push Failed', '#da3633');
+    }
+  }
+
+  function setSyncStatus(txt, color) {
+    document.getElementById('syncStatus').textContent = txt;
+    document.getElementById('syncStatusPill').style.background = color;
+  }
+
+  function saveManualAsset() {
+    const category = document.getElementById('assetCategory').value;
+    const name = document.getElementById('assetName').value.trim();
+    const identifier = document.getElementById('assetIdentifier').value.trim();
+    const owner = document.getElementById('assetOwner').value.trim() || 'Self';
+    const units = parseFloat(document.getElementById('assetUnits').value) || 0;
+    const nav = parseFloat(document.getElementById('assetNAV').value) || 0;
+    let valuation = parseFloat(document.getElementById('assetValuation').value) || 0;
+
+    if (!name) { alert('Scheme/Stock Name is required.'); return; }
+    if (!valuation && units && nav) valuation = units * nav;
+
+    portfolio.push({
+      id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
+      category,
+      name,
+      identifier,
+      owner,
+      units,
+      nav,
+      valuation,
+      lastUpdated: new Date().toISOString()
+    });
+
+    toggleForm();
+    document.getElementById('assetName').value = '';
+    document.getElementById('assetIdentifier').value = '';
+    document.getElementById('assetUnits').value = '';
+    document.getElementById('assetNAV').value = '';
+    document.getElementById('assetValuation').value = '';
+
+    pushToCloud();
+  }
+
+  function deleteAsset(id) {
+    portfolio = portfolio.filter(a => a.id !== id);
+    pushToCloud();
+  }
+
+  // CSV Ingestion
+  function handleCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        let imported = 0;
+        results.data.forEach(row => {
+          const name = row['Scheme Name'] || row['Security Name'] || row['Scheme'] || row['Particulars'] || row['name'];
+          const val = parseFloat(row['Current Value'] || row['Valuation'] || row['Market Value'] || row['Value'] || 0);
+          const units = parseFloat(row['Units'] || row['Qty'] || row['Quantity'] || 0);
+          const nav = parseFloat(row['NAV'] || row['Price'] || 0);
+          const category = row['Category'] || (row['PRAN'] ? 'NPS' : 'Mutual Fund');
+
+          if (name && (val || units)) {
+            portfolio.push({
+              id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
+              category: category.includes('NPS') ? 'NPS' : (category.includes('Stock') ? 'Stocks' : 'Mutual Fund'),
+              name: name.trim(),
+              identifier: (row['Folio Number'] || row['Folio'] || row['ISIN'] || row['PRAN'] || '').trim(),
+              owner: (row['Owner'] || row['Holder'] || 'Self').trim(),
+              units: units,
+              nav: nav,
+              valuation: val || (units * nav),
+              lastUpdated: new Date().toISOString()
+            });
+            imported++;
+          }
+        });
+        pushToCloud();
+        alert(`Imported ${imported} holdings from CSV.`);
+      }
+    });
+    event.target.value = '';
+  }
+
+  // PDF Parser (AMC / CAMS style statement text extraction)
+  async function handlePDF(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fileReader = new FileReader();
+    fileReader.onload = async function() {
+      const typedArray = new Uint8Array(this.result);
+      try {
+        const pdf = await pdfjsLib.getDocument(typedArray).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          fullText += ' ' + textContent.items.map(item => item.str).join(' ');
+        }
+
+        let parsedCount = 0;
+        const lines = fullText.split(/\n|\r|\s{3,}/);
+        lines.forEach(line => {
+          if (line.match(/Fund|Growth|Direct|Plan|Index|Equity/i) && line.match(/\d+\.\d{2,}/)) {
+            const numbers = line.match(/\d+(?:,\d+)*(?:\.\d+)?/g);
+            if (numbers && numbers.length >= 2) {
+              const clean = numbers.map(n => parseFloat(n.replace(/,/g, '')));
+              const candidateVal = Math.max(...clean);
+              const candidateUnits = clean.find(n => n > 0 && n !== candidateVal) || 0;
+
+              portfolio.push({
+                id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
+                category: 'Mutual Fund',
+                name: line.replace(/[0-9,.]/g, '').trim().substring(0, 50),
+                identifier: 'PDF Import',
+                owner: 'Self',
+                units: candidateUnits,
+                nav: candidateUnits ? (candidateVal / candidateUnits) : 0,
+                valuation: candidateVal,
+                lastUpdated: new Date().toISOString()
+              });
+              parsedCount++;
+            }
+          }
+        });
+
+        if (parsedCount > 0) {
+          pushToCloud();
+          alert(`Extracted and saved ${parsedCount} entries from PDF.`);
+        } else {
+          alert('Could not auto-extract schemes. If protected, remove password or import via CSV.');
+        }
+      } catch (err) {
+        alert('Failed to parse PDF.');
+      }
+    };
+    fileReader.readAsArrayBuffer(file);
+    event.target.value = '';
+  }
+
+  function getAggregates() {
+    let mf = 0, stocks = 0, nps = 0;
+    portfolio.forEach(item => {
+      const v = Number(item.valuation) || 0;
+      if (item.category === 'Mutual Fund') mf += v;
+      else if (item.category === 'Stocks') stocks += v;
+      else if (item.category === 'NPS') nps += v;
+    });
+    return { mf, stocks, nps, total: mf + stocks + nps };
+  }
+
+  function render() {
+    const body = document.getElementById('assetsTableBody');
+    const agg = getAggregates();
+
+    document.getElementById('totalBalance').textContent = formatINR(agg.total);
+    document.getElementById('mfBalance').textContent = formatINR(agg.mf);
+    document.getElementById('stocksBalance').textContent = formatINR(agg.stocks);
+    document.getElementById('npsBalance').textContent = formatINR(agg.nps);
+
+    if (portfolio.length === 0) {
+      body.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding: 24px;">No holdings loaded. Configure cloud sync or add data.</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = portfolio.map(item => `
+      <tr>
+        <td><span class="badge ${item.category === 'Mutual Fund' ? 'MF' : item.category}">${item.category}</span></td>
+        <td><strong>${item.name}</strong></td>
+        <td><span style="font-family:var(--font-mono); color:var(--text-muted);">${item.identifier || '—'}</span></td>
+        <td>${item.owner}</td>
+        <td class="num">${Number(item.units || 0).toLocaleString('en-IN', { minimumFractionDigits: 3 })}</td>
+        <td class="num">${Number(item.nav || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+        <td class="num" style="font-weight:600;">${formatINR(item.valuation)}</td>
+        <td style="text-align:center;">
+          <button class="del-btn" onclick="deleteAsset('${item.id}')">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // Vault Payload Projection Export
+  function exportForMasterVault() {
+    const summary = getAggregates();
+    const vaultPayload = {
+      satelliteSource: "MarketAssetsSatellite",
+      projectionDate: new Date().toISOString(),
+      vaultBucketSummary: {
+        bucketCategory: "Market Assets (MF, Equity & Pension)",
+        totalProjectedValue: summary.total,
+        breakdown: [
+          { assetClass: "Mutual Funds", aggregateValue: summary.mf },
+          { assetClass: "Equities / Stocks", aggregateValue: summary.stocks },
+          { assetClass: "National Pension System (NPS)", aggregateValue: summary.nps }
+        ]
+      },
+      itemizedHoldings: portfolio.map(item => ({
+        category: item.category,
+        name: item.name,
+        identifier: item.identifier,
+        owner: item.owner,
+        valuation: item.valuation,
+        lastUpdated: item.lastUpdated
+      }))
+    };
+
+    const blob = new Blob([JSON.stringify(vaultPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vault-projection-market-assets-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+
+</body>
+</html>
