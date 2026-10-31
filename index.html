@@ -8,7 +8,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Portfolio Satellite | Market Showcase</title>
 
-  <!-- External Parsers -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
@@ -26,8 +25,6 @@
       --danger: #da3633;
       --profit: #3fb950;
       --loss: #f85149;
-      --direct-badge: #8957e5;
-      --regular-badge: #6e7681;
       --font-mono: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, Consolas, monospace;
     }
 
@@ -47,7 +44,6 @@
 
     .container { max-width: 1350px; margin: 0 auto; }
 
-    /* Top Bar */
     header {
       display: flex;
       justify-content: space-between;
@@ -73,7 +69,6 @@
     }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #e3b341; }
 
-    /* Portfolio Hero Section */
     .hero-summary {
       background: linear-gradient(145deg, #161c26 0%, #11151e 100%);
       border: 1px solid var(--border);
@@ -104,7 +99,6 @@
     .hero-pl-chip.profit { background: rgba(63, 185, 80, 0.15); color: var(--profit); }
     .hero-pl-chip.loss { background: rgba(248, 81, 73, 0.15); color: var(--loss); }
 
-    /* Bucket Grids */
     .buckets-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -122,7 +116,6 @@
     .bucket-val { font-size: 19px; font-weight: 700; font-family: var(--font-mono); }
     .bucket-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
 
-    /* Action Toolbar */
     .toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -142,7 +135,6 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      transition: background 0.15s, border-color 0.15s;
     }
     button:hover, label.btn-tool:hover { background-color: var(--card-sub); border-color: #444c56; }
     button.primary { background-color: var(--accent); border-color: var(--accent); color: #fff; }
@@ -151,7 +143,6 @@
     button.export { background-color: #23863622; border-color: #23863666; color: #7ee787; }
     input[type="file"] { display: none; }
 
-    /* Settings Box */
     .config-box {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -161,7 +152,6 @@
       display: none;
     }
 
-    /* Modal / Drawer */
     .modal-backdrop {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -202,7 +192,6 @@
     }
     input:focus, select:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
 
-    /* Holdings Table */
     .table-container {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -214,13 +203,11 @@
     th { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 11px; }
     td.num, th.num { text-align: right; font-family: var(--font-mono); }
     
-    /* Taxonomy Badges */
     .badge {
       padding: 3px 8px;
       border-radius: 12px;
       font-size: 10px;
       font-weight: 600;
-      letter-spacing: 0.3px;
       display: inline-block;
     }
     .badge-direct { background: rgba(137, 87, 229, 0.2); color: #bc8cff; border: 1px solid rgba(137, 87, 229, 0.4); }
@@ -238,14 +225,13 @@
 <body>
 
 <div class="container">
-  <!-- Top Navigation Header -->
   <header>
     <div>
       <div class="brand-title">
         <span>Portfolio Satellite</span>
         <span style="font-size: 11px; padding: 2px 6px; background:#21262d; border-radius: 4px; color: var(--accent);">PRO</span>
       </div>
-      <div class="brand-subtitle">Daily Balances &bull; AMFI Real-time NAV &bull; Family Estate Sync</div>
+      <div class="brand-subtitle">ISIN Resolution Engine &bull; AMFI Direct NAV &bull; Family Vault Sync</div>
     </div>
     <div class="sync-status-box" onclick="toggleConfig()">
       <div class="status-dot" id="statusDot"></div>
@@ -253,7 +239,7 @@
     </div>
   </header>
 
-  <!-- JSONbin Cloud / Encryption Configuration Drawer -->
+  <!-- Settings Drawer -->
   <div class="config-box" id="configDrawer">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
       <strong style="font-size: 14px;">Cloud Sync & Security Credentials (JSONbin.io)</strong>
@@ -279,7 +265,7 @@
     </div>
   </div>
 
-  <!-- Primary Portfolio Hero Display -->
+  <!-- Hero Summary -->
   <div class="hero-summary">
     <div class="hero-top">
       <div>
@@ -299,7 +285,7 @@
     </div>
   </div>
 
-  <!-- Asset Class Buckets -->
+  <!-- Buckets -->
   <div class="buckets-grid">
     <div class="bucket-card">
       <div class="bucket-head">
@@ -329,10 +315,10 @@
     </div>
   </div>
 
-  <!-- Action Toolbar -->
+  <!-- Toolbar -->
   <div class="toolbar">
     <button class="primary" onclick="openEntryModal('NEW')">+ Add Asset / Buy</button>
-    <button class="refresh" onclick="refreshLiveMFData()">🔄 Live NAV Sync (AMFI)</button>
+    <button class="refresh" onclick="refreshLiveMFData()">🔄 Live NAV Sync (ISIN / AMFI)</button>
     <label class="btn-tool">
       Import CSV
       <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSV(event)">
@@ -345,7 +331,7 @@
     <button onclick="toggleConfig()">Settings</button>
   </div>
 
-  <!-- Holdings Master Table -->
+  <!-- Holdings Grid -->
   <div class="table-container">
     <table>
       <thead>
@@ -373,7 +359,7 @@
   </div>
 </div>
 
-<!-- Modal: Edit / Add Asset Drawer -->
+<!-- Modal: Add / Edit Holding -->
 <div class="modal-backdrop" id="entryModal">
   <div class="modal-window">
     <div class="modal-head">
@@ -398,7 +384,7 @@
         <select id="planType">
           <option value="Direct - Growth">Direct - Growth</option>
           <option value="Regular - Growth">Regular - Growth</option>
-          <option value="Direct - IDCW">Direct - IDCW (Dividend)</option>
+          <option value="Direct - IDCW">Direct - IDCW</option>
           <option value="Regular - IDCW">Regular - IDCW</option>
           <option value="Equity Stock">Equity Stock</option>
           <option value="NPS Tier 1">NPS Tier 1</option>
@@ -407,21 +393,21 @@
       </div>
 
       <div class="form-group" style="grid-column: span 2;">
-        <label>Scheme / Security Name</label>
+        <label>ISIN Number (e.g. INF879O01027)</label>
         <div style="display:flex; gap: 6px;">
-          <input type="text" id="assetName" placeholder="e.g. Parag Parikh Flexi Cap Fund" style="flex:1;">
-          <button type="button" class="primary" onclick="searchAndFetchAMFI()" style="padding: 8px 12px;">Fetch NAV</button>
+          <input type="text" id="assetISIN" placeholder="INF... (Found in CAS statement)" style="flex:1; font-family:var(--font-mono); text-transform:uppercase;">
+          <button type="button" class="primary" onclick="lookupByISIN()" style="padding: 8px 12px;">Fetch NAV by ISIN</button>
         </div>
       </div>
 
-      <div class="form-group">
-        <label>AMFI Scheme Code (Optional)</label>
-        <input type="text" id="amfiCode" placeholder="e.g. 122639 (Auto-filled on search)">
+      <div class="form-group" style="grid-column: span 2;">
+        <label>Scheme / Security Name</label>
+        <input type="text" id="assetName" placeholder="e.g. Parag Parikh Flexi Cap Fund">
       </div>
 
       <div class="form-group">
         <label>Folio / Demat / PRAN ID</label>
-        <input type="text" id="assetIdentifier" placeholder="Folio No. / ISIN">
+        <input type="text" id="assetIdentifier" placeholder="Folio No.">
       </div>
 
       <div class="form-group">
@@ -435,7 +421,7 @@
       </div>
 
       <div class="form-group">
-        <label>Average Purchase NAV (₹)</label>
+        <label>Avg Purchase NAV (₹)</label>
         <input type="number" step="any" id="assetBuyNAV" placeholder="0.00" oninput="calcFormValues('buyNav')">
       </div>
 
@@ -467,16 +453,16 @@
 
   let portfolio = [];
   let hideBalances = false;
-  const LOCAL_CACHE = 'satellite_market_portfolio_v3';
-  const CONFIG_STORE = 'satellite_market_config_v3';
+  let amfiMasterMap = null; // In-memory index of official AMFI NAV master file
+
+  const LOCAL_CACHE = 'satellite_market_portfolio_v4';
+  const CONFIG_STORE = 'satellite_market_config_v4';
 
   window.addEventListener('DOMContentLoaded', () => {
-    // Restore Settings
     const conf = JSON.parse(localStorage.getItem(CONFIG_STORE) || '{}');
     if (conf.binId) document.getElementById('binId').value = conf.binId;
     if (conf.masterKey) document.getElementById('masterKey').value = conf.masterKey;
 
-    // Restore Data Cache
     const cached = localStorage.getItem(LOCAL_CACHE);
     if (cached) {
       portfolio = JSON.parse(cached);
@@ -507,7 +493,6 @@
     alert('Credentials stored in local encrypted browser sandbox.');
   }
 
-  // Detect and Normalize Direct / Regular Plan Taxonomy
   function detectPlanStructure(name, category) {
     if (category === 'Stocks') return 'Equity Stock';
     if (category === 'NPS') return 'NPS Tier 1';
@@ -525,16 +510,11 @@
   function handleCategoryChange() {
     const cat = document.getElementById('assetCategory').value;
     const planSel = document.getElementById('planType');
-    if (cat === 'Stocks') {
-      planSel.value = 'Equity Stock';
-    } else if (cat === 'NPS') {
-      planSel.value = 'NPS Tier 1';
-    } else {
-      planSel.value = 'Direct - Growth';
-    }
+    if (cat === 'Stocks') planSel.value = 'Equity Stock';
+    else if (cat === 'NPS') planSel.value = 'NPS Tier 1';
+    else planSel.value = 'Direct - Growth';
   }
 
-  // Robust Form Bidirectional Calculator
   function calcFormValues(field) {
     let units = parseFloat(document.getElementById('assetUnits').value) || 0;
     let buyNav = parseFloat(document.getElementById('assetBuyNAV').value) || 0;
@@ -558,7 +538,6 @@
     }
   }
 
-  // Modal Open/Close Logic
   function openEntryModal(mode, id = null) {
     const modal = document.getElementById('entryModal');
     modal.style.display = 'flex';
@@ -570,8 +549,8 @@
       document.getElementById('editHoldingId').value = item.id;
       document.getElementById('assetCategory').value = item.category;
       document.getElementById('planType').value = item.planType || detectPlanStructure(item.name, item.category);
+      document.getElementById('assetISIN').value = item.isin || '';
       document.getElementById('assetName').value = item.name;
-      document.getElementById('amfiCode').value = item.amfiCode || '';
       document.getElementById('assetIdentifier').value = item.identifier || '';
       document.getElementById('assetOwner').value = item.owner || 'Self';
       document.getElementById('assetUnits').value = item.units;
@@ -584,8 +563,8 @@
       document.getElementById('editHoldingId').value = '';
       document.getElementById('assetCategory').value = 'Mutual Fund';
       document.getElementById('planType').value = 'Direct - Growth';
+      document.getElementById('assetISIN').value = '';
       document.getElementById('assetName').value = '';
-      document.getElementById('amfiCode').value = '';
       document.getElementById('assetIdentifier').value = '';
       document.getElementById('assetOwner').value = 'Self';
       document.getElementById('assetUnits').value = '';
@@ -600,127 +579,151 @@
     document.getElementById('entryModal').style.display = 'none';
   }
 
-  // Direct AMFI Search & Resolution Engine (Dual-Strategy)
-  async function searchAndFetchAMFI() {
-    const rawName = document.getElementById('assetName').value.trim();
-    let amfiCode = document.getElementById('amfiCode').value.trim();
+  // Multi-proxy CORS-resilient fetcher for AMFI official NAVAll.txt
+  async function fetchAMFIMasterDatabase() {
+    if (amfiMasterMap && Object.keys(amfiMasterMap).length > 0) {
+      return amfiMasterMap;
+    }
 
-    if (!rawName && !amfiCode) {
-      alert('Please enter a Scheme Name or AMFI Scheme Code to search.');
+    const cachedMaster = sessionStorage.getItem('amfi_nav_cache');
+    if (cachedMaster) {
+      amfiMasterMap = JSON.parse(cachedMaster);
+      return amfiMasterMap;
+    }
+
+    setSyncStatus('Downloading AMFI master...', '#e3b341');
+    const amfiUrl = 'https://portal.amfiindia.com/spages/NAVAll.txt';
+    const proxyList = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(amfiUrl)}`,
+      `https://corsproxy.io/?${encodeURIComponent(amfiUrl)}`,
+      amfiUrl
+    ];
+
+    let rawText = null;
+    for (let proxy of proxyList) {
+      try {
+        const res = await fetch(proxy, { cache: 'no-cache' });
+        if (res.ok) {
+          const text = await res.text();
+          if (text && text.includes('Scheme Code;')) {
+            rawText = text;
+            break;
+          }
+        }
+      } catch (err) {
+        console.warn('Proxy attempt failed:', proxy);
+      }
+    }
+
+    if (!rawText) {
+      throw new Error('Could not download AMFI master database via CORS proxies.');
+    }
+
+    // Parse the semicolon-delimited file into an ISIN map
+    const map = {};
+    const lines = rawText.split(/\r?\n/);
+    for (let line of lines) {
+      const parts = line.split(';');
+      // Format: Scheme Code;ISIN Div Payout/ISIN Growth;ISIN Div Reinvestment;Scheme Name;Plan;Option;NAV;Date
+      if (parts.length >= 6) {
+        const isinGrowth = parts[1] ? parts[1].trim() : '';
+        const isinReinvest = parts[2] ? parts[2].trim() : '';
+        const schemeName = parts[3] ? parts[3].trim() : '';
+        // Locate NAV (handles both old 6-col and new 8-col formats)
+        const navIndex = parts.length >= 8 ? 6 : 4;
+        const nav = parseFloat(parts[navIndex]);
+
+        if (!isNaN(nav)) {
+          const entry = { name: schemeName, nav: nav, code: parts[0] };
+          if (isinGrowth && isinGrowth !== '-') map[isinGrowth.toUpperCase()] = entry;
+          if (isinReinvest && isinReinvest !== '-') map[isinReinvest.toUpperCase()] = entry;
+          if (parts[0]) map[parts[0].trim()] = entry; // Also index by AMFI Scheme Code
+        }
+      }
+    }
+
+    amfiMasterMap = map;
+    try {
+      sessionStorage.setItem('amfi_nav_cache', JSON.stringify(map));
+    } catch (e) {
+      console.warn('SessionStorage quota exceeded, keeping in-memory only.');
+    }
+
+    setSyncStatus('AMFI Ready', '#238636');
+    return amfiMasterMap;
+  }
+
+  // Lookup NAV by exact ISIN
+  async function lookupByISIN() {
+    const isin = document.getElementById('assetISIN').value.trim().toUpperCase();
+    if (!isin) {
+      alert('Please enter an ISIN (e.g. INF879O01027). You can find it in your CAMS / KFintech statement.');
       return;
     }
 
     try {
-      // 1. If AMFI Code is provided, directly fetch live NAV
-      if (amfiCode) {
-        const directRes = await fetch(`https://api.mfapi.in/mf/${amfiCode}/latest`);
-        const data = await directRes.json();
-        if (data && data.data && data.data[0]) {
-          const nav = parseFloat(data.data[0].nav);
-          document.getElementById('assetCurrentNAV').value = nav;
-          calcFormValues('currentNav');
-          alert(`Success: Fetched NAV ₹${nav} (${data.meta.scheme_name})`);
-          return;
+      const master = await fetchAMFIMasterDatabase();
+      const match = master[isin];
+
+      if (match) {
+        document.getElementById('assetCurrentNAV').value = match.nav;
+        if (!document.getElementById('assetName').value.trim()) {
+          document.getElementById('assetName').value = match.name;
         }
-      }
-
-      // 2. Perform intelligent scheme search
-      const cleanSearchQuery = rawName.replace(/mutual\s*fund|direct|regular|growth|plan|-/gi, ' ').trim();
-      const searchRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(cleanSearchQuery)}`);
-      const searchList = await searchRes.json();
-
-      if (!searchList || searchList.length === 0) {
-        alert('No schemes matched this search on AMFI. Try typing the AMC name or key keywords (e.g., "Parag Parikh Flexi").');
-        return;
-      }
-
-      // Match Direct vs Regular preference from user dropdown
-      const selectedPlan = document.getElementById('planType').value;
-      const isDirectSelected = selectedPlan.includes('Direct');
-
-      let matchedScheme = searchList.find(s => {
-        const sName = s.schemeName.toLowerCase();
-        return isDirectSelected ? sName.includes('direct') && sName.includes('growth') : !sName.includes('direct') && sName.includes('growth');
-      }) || searchList[0];
-
-      // Fetch the NAV for the resolved scheme
-      const navRes = await fetch(`https://api.mfapi.in/mf/${matchedScheme.schemeCode}/latest`);
-      const navData = await navRes.json();
-
-      if (navData && navData.data && navData.data[0]) {
-        const latestNav = parseFloat(navData.data[0].nav);
-        document.getElementById('amfiCode').value = matchedScheme.schemeCode;
-        document.getElementById('assetName').value = matchedScheme.schemeName;
-        document.getElementById('assetCurrentNAV').value = latestNav;
-        document.getElementById('planType').value = detectPlanStructure(matchedScheme.schemeName, 'Mutual Fund');
+        document.getElementById('planType').value = detectPlanStructure(match.name, 'Mutual Fund');
         calcFormValues('currentNav');
-        alert(`Linked to AMFI Scheme: ${matchedScheme.schemeName}\nLive NAV: ₹${latestNav}`);
+        alert(`Match Found!\nScheme: ${match.name}\nLive NAV: ₹${match.nav}`);
+      } else {
+        alert(`ISIN "${isin}" was not found in today's AMFI master list. Please verify the ISIN or enter the NAV manually.`);
       }
     } catch (err) {
       console.error(err);
-      alert('Could not connect to AMFI live service. Ensure internet access, or enter NAV manually.');
+      alert('Could not pull AMFI master database. Please check your internet connection or enter the NAV manually.');
     }
   }
 
-  // Batch Refresh All Mutual Funds in Portfolio
+  // Live Batch Sync for all stored holdings via ISIN / Code
   async function refreshLiveMFData() {
-    let updatedCount = 0;
     const totalMFs = portfolio.filter(p => p.category === 'Mutual Fund').length;
     if (totalMFs === 0) {
-      alert('No Mutual Fund holdings found to refresh.');
+      alert('No Mutual Fund holdings found in portfolio.');
       return;
     }
 
-    setSyncStatus('Fetching AMFI NAVs...', '#e3b341');
+    try {
+      const master = await fetchAMFIMasterDatabase();
+      let updatedCount = 0;
 
-    for (let item of portfolio) {
-      if (item.category === 'Mutual Fund') {
-        try {
-          let code = item.amfiCode;
-          if (!code) {
-            const cleanQuery = item.name.replace(/mutual\s*fund|direct|regular|growth|plan|-/gi, ' ').trim();
-            const sRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(cleanQuery)}`);
-            const sList = await sRes.json();
-            if (sList && sList.length > 0) {
-              const isDirect = (item.planType || item.name).toLowerCase().includes('direct');
-              const matched = sList.find(s => {
-                const sName = s.schemeName.toLowerCase();
-                return isDirect ? sName.includes('direct') && sName.includes('growth') : !sName.includes('direct') && sName.includes('growth');
-              }) || sList[0];
-              code = matched.schemeCode;
-              item.amfiCode = code;
-            }
-          }
+      for (let item of portfolio) {
+        if (item.category === 'Mutual Fund') {
+          const isin = (item.isin || '').toUpperCase().trim();
+          const code = (item.amfiCode || '').trim();
 
-          if (code) {
-            const navRes = await fetch(`https://api.mfapi.in/mf/${code}/latest`);
-            const navData = await navRes.json();
-            if (navData && navData.data && navData.data[0]) {
-              const liveNav = parseFloat(navData.data[0].nav);
-              item.currentNav = liveNav;
-              item.valuation = (item.units || 0) * liveNav;
-              item.lastUpdated = new Date().toISOString();
-              updatedCount++;
-            }
+          const match = master[isin] || master[code];
+          if (match && match.nav) {
+            item.currentNav = match.nav;
+            item.valuation = (item.units || 0) * match.nav;
+            item.lastUpdated = new Date().toISOString();
+            updatedCount++;
           }
-        } catch (e) {
-          console.warn('Live fetch failed for', item.name);
         }
       }
-    }
 
-    pushToCloud();
-    renderApp();
-    alert(`Real-time update complete: Synced ${updatedCount} of ${totalMFs} Mutual Fund positions.`);
+      pushToCloud();
+      renderApp();
+      alert(`Sync Complete: Updated ${updatedCount} of ${totalMFs} Mutual Fund positions from official AMFI database.`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to connect to AMFI live service: ' + err.message);
+    }
   }
 
-  // Save Modal Record (Handles Create & In-Place Update)
   function saveAssetFromModal() {
     const editId = document.getElementById('editHoldingId').value;
     const category = document.getElementById('assetCategory').value;
     const planType = document.getElementById('planType').value;
+    const isin = document.getElementById('assetISIN').value.trim().toUpperCase();
     const name = document.getElementById('assetName').value.trim();
-    const amfiCode = document.getElementById('amfiCode').value.trim();
     const identifier = document.getElementById('assetIdentifier').value.trim();
     const owner = document.getElementById('assetOwner').value.trim() || 'Self';
     const units = parseFloat(document.getElementById('assetUnits').value) || 0;
@@ -729,8 +732,8 @@
     let investedCost = parseFloat(document.getElementById('assetInvestedCost').value) || 0;
     let valuation = parseFloat(document.getElementById('assetMarketVal').value) || 0;
 
-    if (!name) { alert('Scheme/Stock Name is mandatory.'); return; }
-    if (units <= 0) { alert('Please enter valid holding units greater than 0.'); return; }
+    if (!name) { alert('Scheme Name is mandatory.'); return; }
+    if (units <= 0) { alert('Please enter holding units greater than 0.'); return; }
 
     if (!currentNav && buyNav) currentNav = buyNav;
     if (!buyNav && currentNav) buyNav = currentNav;
@@ -738,15 +741,14 @@
     if (!valuation) valuation = units * currentNav;
 
     if (editId) {
-      // In-place update
       const idx = portfolio.findIndex(x => x.id === editId);
       if (idx !== -1) {
         portfolio[idx] = {
           ...portfolio[idx],
           category,
           planType,
+          isin,
           name,
-          amfiCode,
           identifier,
           owner,
           units,
@@ -758,13 +760,12 @@
         };
       }
     } else {
-      // Create new position
       portfolio.push({
         id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
         category,
         planType,
+        isin,
         name,
-        amfiCode,
         identifier,
         owner,
         units,
@@ -782,7 +783,7 @@
 
   function deleteAsset(id) {
     const item = portfolio.find(x => x.id === id);
-    if (confirm(`Remove "${item ? item.name : 'this holding'}" from tracker?`)) {
+    if (confirm(`Remove "${item ? item.name : 'this holding'}"?`)) {
       portfolio = portfolio.filter(x => x.id !== id);
       pushToCloud();
     }
@@ -799,7 +800,6 @@
     });
   }
 
-  // Ingestion: CSV Normalizer
   function handleCSV(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -811,12 +811,13 @@
         let count = 0;
         results.data.forEach(row => {
           const name = row['Scheme Name'] || row['Security Name'] || row['Scheme'] || row['Particulars'] || row['name'];
+          const isin = (row['ISIN'] || row['isin'] || row['ISIN Number'] || '').toUpperCase().trim();
           const val = parseFloat(row['Current Value'] || row['Valuation'] || row['Market Value'] || row['Value'] || 0);
           const units = parseFloat(row['Units'] || row['Qty'] || row['Quantity'] || 0);
           const currentNav = parseFloat(row['NAV'] || row['Current NAV'] || row['Price'] || 0);
           const buyNav = parseFloat(row['Purchase NAV'] || row['Buy Price'] || row['Avg Cost'] || currentNav || 0);
           const cost = parseFloat(row['Invested Value'] || row['Cost'] || (units * buyNav) || 0);
-          const category = row['Category'] || (row['PRAN'] ? 'NPS' : (row['ISIN'] && !row['Folio'] ? 'Stocks' : 'Mutual Fund'));
+          const category = row['Category'] || (row['PRAN'] ? 'NPS' : (isin && !row['Folio'] ? 'Stocks' : 'Mutual Fund'));
 
           if (name && (val || units)) {
             const finalUnits = units || (currentNav ? val / currentNav : 0);
@@ -825,9 +826,9 @@
               id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
               category: category.includes('NPS') ? 'NPS' : (category.includes('Stock') ? 'Stocks' : 'Mutual Fund'),
               planType: detectPlanStructure(name, category),
+              isin: isin,
               name: name.trim(),
-              amfiCode: (row['AMFI'] || row['Scheme Code'] || '').trim(),
-              identifier: (row['Folio Number'] || row['Folio'] || row['ISIN'] || row['PRAN'] || '').trim(),
+              identifier: (row['Folio Number'] || row['Folio'] || isin || row['PRAN'] || '').trim(),
               owner: (row['Owner'] || row['Holder'] || 'Self').trim(),
               units: finalUnits,
               buyNav: buyNav || currentNav,
@@ -847,7 +848,6 @@
     event.target.value = '';
   }
 
-  // Ingestion: PDF Parser
   async function handlePDF(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -869,6 +869,7 @@
         lines.forEach(line => {
           if (line.match(/Fund|Growth|Direct|Plan|Index|Equity/i) && line.match(/\d+\.\d{2,}/)) {
             const nums = line.match(/\d+(?:,\d+)*(?:\.\d+)?/g);
+            const isinMatch = line.match(/INF[A-Z0-9]{9}/i);
             if (nums && nums.length >= 2) {
               const cleanNums = nums.map(n => parseFloat(n.replace(/,/g, '')));
               const candVal = Math.max(...cleanNums);
@@ -880,8 +881,8 @@
                 id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
                 category: 'Mutual Fund',
                 planType: detectPlanStructure(sName, 'Mutual Fund'),
+                isin: isinMatch ? isinMatch[0].toUpperCase() : '',
                 name: sName,
-                amfiCode: '',
                 identifier: 'PDF Statement',
                 owner: 'Self',
                 units: candUnits,
@@ -899,7 +900,7 @@
         if (extracted > 0) {
           normalizePortfolioHoldings();
           pushToCloud();
-          alert(`Extracted ${extracted} holdings from statement PDF.`);
+          alert(`Extracted ${extracted} holdings from PDF statement.`);
         } else {
           alert('Could not auto-extract rows. If password-protected, remove password first.');
         }
@@ -911,7 +912,6 @@
     event.target.value = '';
   }
 
-  // Security: AES-256-GCM
   async function getKey(pin, salt) {
     const enc = new TextEncoder();
     const keyMat = await crypto.subtle.importKey("raw", enc.encode(pin), { name: "PBKDF2" }, false, ["deriveKey"]);
@@ -946,7 +946,6 @@
     return new TextDecoder().decode(decrypted);
   }
 
-  // Cloud Network Routines
   async function initCloudSync() {
     const binId = document.getElementById('binId').value.trim();
     const masterKey = document.getElementById('masterKey').value.trim();
@@ -1025,7 +1024,6 @@
     document.getElementById('statusDot').style.background = color;
   }
 
-  // Master Render Loop
   function renderApp() {
     let mfV = 0, mfC = 0, mfN = 0;
     let stV = 0, stC = 0, stN = 0;
@@ -1049,7 +1047,6 @@
     const pl = totalVal - totalCost;
     const plPct = totalCost > 0 ? (pl / totalCost) * 100 : 0;
 
-    // Update Hero
     document.getElementById('totalCurrentValue').textContent = formatINR(totalVal);
     document.getElementById('heroInvestedCost').textContent = formatINR(totalCost);
 
@@ -1067,7 +1064,6 @@
       txt.textContent = `${formatINR(pl)} (${plPct.toFixed(2)}%)`;
     }
 
-    // Update Buckets
     document.getElementById('mfValue').textContent = formatINR(mfV);
     document.getElementById('mfCost').textContent = formatINR(mfC);
     document.getElementById('mfCount').textContent = `${mfN} Schemes`;
@@ -1080,7 +1076,6 @@
     document.getElementById('npsCost').textContent = formatINR(npC);
     document.getElementById('npsCount').textContent = `${npN} Portfolios`;
 
-    // Render Table Rows
     const tbody = document.getElementById('holdingsTableBody');
     if (portfolio.length === 0) {
       tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:32px;">No holdings registered. Tap <strong>+ Add Asset</strong> or pull from cloud.</td></tr>`;
@@ -1106,7 +1101,7 @@
             <div class="scheme-name">${item.name}</div>
             <div class="scheme-sub">
               <span>${item.identifier || 'No Folio'}</span>
-              ${item.amfiCode ? `<span>&bull; AMFI: ${item.amfiCode}</span>` : ''}
+              ${item.isin ? `<span>&bull; ISIN: <code style="color:var(--text);">${item.isin}</code></span>` : ''}
             </div>
           </td>
           <td>
@@ -1133,7 +1128,6 @@
     }).join('');
   }
 
-  // Vault Projection Export Contract
   function exportForMasterVault() {
     let mfV = 0, mfC = 0, stV = 0, stC = 0, npV = 0, npC = 0;
     portfolio.forEach(item => {
