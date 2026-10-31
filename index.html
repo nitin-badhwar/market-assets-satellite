@@ -38,10 +38,7 @@
       min-height: 100vh;
     }
 
-    @media (min-width: 768px) {
-      body { padding: 24px; }
-    }
-
+    @media (min-width: 768px) { body { padding: 24px; } }
     .container { max-width: 1350px; margin: 0 auto; }
 
     header {
@@ -135,6 +132,7 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
+      transition: background 0.15s, border-color 0.15s;
     }
     button:hover, label.btn-tool:hover { background-color: var(--card-sub); border-color: #444c56; }
     button.primary { background-color: var(--accent); border-color: var(--accent); color: #fff; }
@@ -285,7 +283,7 @@
     </div>
   </div>
 
-  <!-- Buckets -->
+  <!-- Buckets Grid -->
   <div class="buckets-grid">
     <div class="bucket-card">
       <div class="bucket-head">
@@ -453,10 +451,10 @@
 
   let portfolio = [];
   let hideBalances = false;
-  let amfiMasterMap = null; // In-memory index of official AMFI NAV master file
+  let amfiMasterMap = null;
 
-  const LOCAL_CACHE = 'satellite_market_portfolio_v4';
-  const CONFIG_STORE = 'satellite_market_config_v4';
+  const LOCAL_CACHE = 'satellite_market_portfolio_v5';
+  const CONFIG_STORE = 'satellite_market_config_v5';
 
   window.addEventListener('DOMContentLoaded', () => {
     const conf = JSON.parse(localStorage.getItem(CONFIG_STORE) || '{}');
@@ -490,7 +488,7 @@
     const binId = document.getElementById('binId').value.trim();
     const masterKey = document.getElementById('masterKey').value.trim();
     localStorage.setItem(CONFIG_STORE, JSON.stringify({ binId, masterKey }));
-    alert('Credentials stored in local encrypted browser sandbox.');
+    alert('Credentials saved in local browser sandbox.');
   }
 
   function detectPlanStructure(name, category) {
@@ -579,87 +577,107 @@
     document.getElementById('entryModal').style.display = 'none';
   }
 
-  // Multi-proxy CORS-resilient fetcher for AMFI official NAVAll.txt
+  // Resilient multi-tier AMFI master downloader & parser
   async function fetchAMFIMasterDatabase() {
     if (amfiMasterMap && Object.keys(amfiMasterMap).length > 0) {
       return amfiMasterMap;
     }
 
-    const cachedMaster = sessionStorage.getItem('amfi_nav_cache');
-    if (cachedMaster) {
-      amfiMasterMap = JSON.parse(cachedMaster);
-      return amfiMasterMap;
+    const cached = sessionStorage.getItem('amfi_master_cache_v5');
+    if (cached) {
+      try {
+        amfiMasterMap = JSON.parse(cached);
+        return amfiMasterMap;
+      } catch (e) {
+        sessionStorage.removeItem('amfi_master_cache_v5');
+      }
     }
 
-    setSyncStatus('Downloading AMFI master...', '#e3b341');
+    setSyncStatus('Downloading AMFI file...', '#e3b341');
+
     const amfiUrl = 'https://portal.amfiindia.com/spages/NAVAll.txt';
-    const proxyList = [
+    const proxyUrls = [
       `https://api.allorigins.win/raw?url=${encodeURIComponent(amfiUrl)}`,
-      `https://corsproxy.io/?${encodeURIComponent(amfiUrl)}`,
-      amfiUrl
+      `https://corsproxy.io/?url=${encodeURIComponent(amfiUrl)}`,
+      `https://thingproxy.freeboard.io/fetch/${amfiUrl}`
     ];
 
-    let rawText = null;
-    for (let proxy of proxyList) {
+    let rawText = '';
+    for (let url of proxyUrls) {
       try {
-        const res = await fetch(proxy, { cache: 'no-cache' });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 9000);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (res.ok) {
           const text = await res.text();
-          if (text && text.includes('Scheme Code;')) {
+          if (text && text.includes(';')) {
             rawText = text;
             break;
           }
         }
       } catch (err) {
-        console.warn('Proxy attempt failed:', proxy);
+        console.warn('Proxy fetch attempt failed for:', url);
       }
     }
 
     if (!rawText) {
-      throw new Error('Could not download AMFI master database via CORS proxies.');
+      throw new Error('Could not establish connection to AMFI servers via proxy gateways.');
     }
 
-    // Parse the semicolon-delimited file into an ISIN map
+    // Dynamic field detection (handles 6-col, 8-col, and new 2026 format shifts)
     const map = {};
     const lines = rawText.split(/\r?\n/);
-    for (let line of lines) {
-      const parts = line.split(';');
-      // Format: Scheme Code;ISIN Div Payout/ISIN Growth;ISIN Div Reinvestment;Scheme Name;Plan;Option;NAV;Date
-      if (parts.length >= 6) {
-        const isinGrowth = parts[1] ? parts[1].trim() : '';
-        const isinReinvest = parts[2] ? parts[2].trim() : '';
-        const schemeName = parts[3] ? parts[3].trim() : '';
-        // Locate NAV (handles both old 6-col and new 8-col formats)
-        const navIndex = parts.length >= 8 ? 6 : 4;
-        const nav = parseFloat(parts[navIndex]);
 
-        if (!isNaN(nav)) {
-          const entry = { name: schemeName, nav: nav, code: parts[0] };
-          if (isinGrowth && isinGrowth !== '-') map[isinGrowth.toUpperCase()] = entry;
-          if (isinReinvest && isinReinvest !== '-') map[isinReinvest.toUpperCase()] = entry;
-          if (parts[0]) map[parts[0].trim()] = entry; // Also index by AMFI Scheme Code
+    for (let line of lines) {
+      if (!line || !line.includes(';')) continue;
+      const parts = line.split(';').map(p => p.trim());
+      if (parts.length < 5) continue;
+
+      const schemeCode = parts[0];
+      const isinGrowth = parts[1];
+      const isinReinvest = parts[2];
+      const schemeName = parts[3];
+
+      // Format-resilient parser: scan tokens for the numeric NAV field
+      let nav = NaN;
+      for (let i = parts.length - 2; i >= 3; i--) {
+        const candidate = parseFloat(parts[i]);
+        if (!isNaN(candidate) && parts[i].match(/^\d+(\.\d+)?$/)) {
+          nav = candidate;
+          break;
         }
+      }
+
+      if (!isNaN(nav)) {
+        const entry = { name: schemeName, nav: nav, code: schemeCode };
+        if (isinGrowth && isinGrowth !== '-') map[isinGrowth.toUpperCase()] = entry;
+        if (isinReinvest && isinReinvest !== '-') map[isinReinvest.toUpperCase()] = entry;
+        if (schemeCode) map[schemeCode] = entry;
       }
     }
 
     amfiMasterMap = map;
     try {
-      sessionStorage.setItem('amfi_nav_cache', JSON.stringify(map));
+      sessionStorage.setItem('amfi_master_cache_v5', JSON.stringify(map));
     } catch (e) {
-      console.warn('SessionStorage quota exceeded, keeping in-memory only.');
+      console.warn('Storage limit reached, cached in active memory.');
     }
 
-    setSyncStatus('AMFI Ready', '#238636');
+    setSyncStatus('AMFI Connected', '#238636');
     return amfiMasterMap;
   }
 
-  // Lookup NAV by exact ISIN
+  // ISIN Quick Lookup with MFAPI Fallback
   async function lookupByISIN() {
     const isin = document.getElementById('assetISIN').value.trim().toUpperCase();
     if (!isin) {
-      alert('Please enter an ISIN (e.g. INF879O01027). You can find it in your CAMS / KFintech statement.');
+      alert('Please enter a valid ISIN (e.g. INF879O01027).');
       return;
     }
+
+    setSyncStatus('Searching ISIN...', '#e3b341');
 
     try {
       const master = await fetchAMFIMasterDatabase();
@@ -672,49 +690,94 @@
         }
         document.getElementById('planType').value = detectPlanStructure(match.name, 'Mutual Fund');
         calcFormValues('currentNav');
-        alert(`Match Found!\nScheme: ${match.name}\nLive NAV: ₹${match.nav}`);
-      } else {
-        alert(`ISIN "${isin}" was not found in today's AMFI master list. Please verify the ISIN or enter the NAV manually.`);
+        alert(`Match Verified!\nScheme: ${match.name}\nLive NAV: ₹${match.nav}`);
+        setSyncStatus('AMFI Ready', '#238636');
+        return;
       }
-    } catch (err) {
-      console.error(err);
-      alert('Could not pull AMFI master database. Please check your internet connection or enter the NAV manually.');
+    } catch (masterErr) {
+      console.warn('Direct master parse encountered issues, trying secondary MFAPI bridge...', masterErr);
     }
+
+    // Direct secondary endpoint failover for ISIN
+    try {
+      const res = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(isin)}`);
+      const list = await res.json();
+      if (list && list.length > 0) {
+        const code = list[0].schemeCode;
+        const navRes = await fetch(`https://api.mfapi.in/mf/${code}/latest`);
+        const navData = await navRes.json();
+        if (navData && navData.data && navData.data[0]) {
+          const nav = parseFloat(navData.data[0].nav);
+          document.getElementById('assetCurrentNAV').value = nav;
+          if (!document.getElementById('assetName').value.trim()) {
+            document.getElementById('assetName').value = navData.meta.scheme_name;
+          }
+          document.getElementById('planType').value = detectPlanStructure(navData.meta.scheme_name, 'Mutual Fund');
+          calcFormValues('currentNav');
+          alert(`Secondary Bridge Verified!\nScheme: ${navData.meta.scheme_name}\nLive NAV: ₹${nav}`);
+          setSyncStatus('AMFI Ready', '#238636');
+          return;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    setSyncStatus('Not Found', '#da3633');
+    alert(`ISIN "${isin}" could not be matched. Please double-check the ISIN string or input the NAV manually.`);
   }
 
-  // Live Batch Sync for all stored holdings via ISIN / Code
+  // Refresh All Mutual Funds in Portfolio
   async function refreshLiveMFData() {
-    const totalMFs = portfolio.filter(p => p.category === 'Mutual Fund').length;
-    if (totalMFs === 0) {
-      alert('No Mutual Fund holdings found in portfolio.');
+    const mfs = portfolio.filter(p => p.category === 'Mutual Fund');
+    if (mfs.length === 0) {
+      alert('No Mutual Fund holdings present in tracker.');
       return;
     }
 
+    setSyncStatus('Syncing Live NAVs...', '#e3b341');
+
     try {
       const master = await fetchAMFIMasterDatabase();
-      let updatedCount = 0;
+      let updated = 0;
 
       for (let item of portfolio) {
         if (item.category === 'Mutual Fund') {
           const isin = (item.isin || '').toUpperCase().trim();
-          const code = (item.amfiCode || '').trim();
+          let match = isin ? master[isin] : null;
 
-          const match = master[isin] || master[code];
+          if (!match && item.name) {
+            // Fuzzy search by clean name in master map
+            const cleanQuery = item.name.toLowerCase().replace(/fund|direct|regular|growth|plan|-/g, '').trim();
+            for (let k in master) {
+              if (master[k].name && master[k].name.toLowerCase().includes(cleanQuery)) {
+                const itemIsDirect = (item.planType || item.name).toLowerCase().includes('direct');
+                const candIsDirect = master[k].name.toLowerCase().includes('direct');
+                if (itemIsDirect === candIsDirect) {
+                  match = master[k];
+                  break;
+                }
+              }
+            }
+          }
+
           if (match && match.nav) {
             item.currentNav = match.nav;
             item.valuation = (item.units || 0) * match.nav;
             item.lastUpdated = new Date().toISOString();
-            updatedCount++;
+            updated++;
           }
         }
       }
 
       pushToCloud();
       renderApp();
-      alert(`Sync Complete: Updated ${updatedCount} of ${totalMFs} Mutual Fund positions from official AMFI database.`);
+      setSyncStatus('Sync Complete', '#238636');
+      alert(`Real-Time Sync Success: Updated ${updated} of ${mfs.length} Mutual Fund positions with AMFI closing valuations.`);
     } catch (err) {
       console.error(err);
-      alert('Failed to connect to AMFI live service: ' + err.message);
+      setSyncStatus('Sync Failed', '#da3633');
+      alert('Sync Failed: ' + err.message);
     }
   }
 
@@ -732,8 +795,8 @@
     let investedCost = parseFloat(document.getElementById('assetInvestedCost').value) || 0;
     let valuation = parseFloat(document.getElementById('assetMarketVal').value) || 0;
 
-    if (!name) { alert('Scheme Name is mandatory.'); return; }
-    if (units <= 0) { alert('Please enter holding units greater than 0.'); return; }
+    if (!name) { alert('Scheme/Stock Name is mandatory.'); return; }
+    if (units <= 0) { alert('Please enter units greater than 0.'); return; }
 
     if (!currentNav && buyNav) currentNav = buyNav;
     if (!buyNav && currentNav) buyNav = currentNav;
@@ -900,7 +963,7 @@
         if (extracted > 0) {
           normalizePortfolioHoldings();
           pushToCloud();
-          alert(`Extracted ${extracted} holdings from PDF statement.`);
+          alert(`Extracted ${extracted} holdings from statement PDF.`);
         } else {
           alert('Could not auto-extract rows. If password-protected, remove password first.');
         }
