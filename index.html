@@ -134,6 +134,7 @@
     .badge.Stocks { color: #7ee787; }
     .badge.NPS { color: #f0883e; }
     .del-btn { color: var(--danger); background: none; border: none; cursor: pointer; padding: 2px 6px; }
+    .edit-btn { color: var(--accent); background: none; border: none; cursor: pointer; padding: 2px 6px; }
     .status-pill {
       display: inline-block;
       width: 8px;
@@ -212,6 +213,7 @@
   <div class="actions-bar">
     <button class="primary" onclick="openEntryForm('BUY')">+ Record Buy / Investment</button>
     <button style="border-color: #f85149;" onclick="openEntryForm('SELL')">- Record Sale / Redemption</button>
+    <button onclick="refreshAllFundNAVs()">🔄 Refresh All MF NAVs (Live)</button>
     <label class="btn">
       Import CSV
       <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSV(event)">
@@ -250,8 +252,11 @@
       </div>
 
       <div class="form-group" style="grid-column: span 2;">
-        <label>Scheme / Stock / Tier Name</label>
-        <input type="text" id="assetName" placeholder="e.g. Parag Parikh Flexi Cap Fund">
+        <label>Scheme / Stock / Fund Name</label>
+        <div style="display: flex; gap: 6px;">
+          <input type="text" id="assetName" placeholder="e.g. Parag Parikh Flexi Cap Fund" style="flex: 1;">
+          <button type="button" onclick="fetchLiveNAVForField()" title="Search & Fetch current NAV automatically">Get NAV</button>
+        </div>
       </div>
 
       <div class="form-group">
@@ -265,28 +270,28 @@
       </div>
 
       <div class="form-group">
-        <label id="unitsLabel">Units to Add</label>
-        <input type="number" step="any" id="assetUnits" placeholder="0.000" oninput="autoCalc()">
+        <label id="unitsLabel">Holding Units</label>
+        <input type="number" step="any" id="assetUnits" placeholder="0.000" oninput="recalcValues('units')">
       </div>
 
       <div class="form-group">
-        <label id="navBuyLabel">Purchase NAV / Buy Price (₹)</label>
-        <input type="number" step="any" id="assetBuyNAV" placeholder="0.00" oninput="autoCalc()">
+        <label id="navBuyLabel">Avg Buy NAV (₹)</label>
+        <input type="number" step="any" id="assetBuyNAV" placeholder="0.00" oninput="recalcValues('buyNav')">
       </div>
 
       <div class="form-group">
-        <label id="navCurrentLabel">Current Market NAV / Price (₹)</label>
-        <input type="number" step="any" id="assetCurrentNAV" placeholder="0.00" oninput="autoCalc()">
+        <label id="navCurrentLabel">Current NAV / Live Price (₹)</label>
+        <input type="number" step="any" id="assetCurrentNAV" placeholder="0.00" oninput="recalcValues('currentNav')">
       </div>
 
       <div class="form-group">
-        <label>Total Invested Cost (₹)</label>
-        <input type="number" step="any" id="assetInvestedCost" placeholder="0.00">
+        <label>Invested Cost (₹)</label>
+        <input type="number" step="any" id="assetInvestedCost" placeholder="0.00" oninput="recalcValues('investedCost')">
       </div>
 
       <div class="form-group">
         <label>Current Market Value (₹)</label>
-        <input type="number" step="any" id="assetMarketValuation" placeholder="0.00">
+        <input type="number" step="any" id="assetMarketValuation" placeholder="0.00" oninput="recalcValues('marketVal')">
       </div>
     </div>
 
@@ -305,7 +310,7 @@
           <th>Scheme / Security Name</th>
           <th>Identifier</th>
           <th>Holder</th>
-          <th class="num">Holding Units</th>
+          <th class="num">Units</th>
           <th class="num">Avg Buy NAV (₹)</th>
           <th class="num">Current NAV (₹)</th>
           <th class="num">Invested Cost (₹)</th>
@@ -338,6 +343,8 @@
     const cachedData = localStorage.getItem(LOCAL_CACHE);
     if (cachedData) {
       portfolio = JSON.parse(cachedData);
+      // Auto-recalculate any existing records where market value was stored as 0
+      recalculatePortfolioBalances();
       render();
     }
   });
@@ -382,19 +389,145 @@
     }
   }
 
-  function autoCalc() {
-    const units = parseFloat(document.getElementById('assetUnits').value) || 0;
-    const buyNav = parseFloat(document.getElementById('assetBuyNAV').value) || 0;
-    const currentNav = parseFloat(document.getElementById('assetCurrentNAV').value) || 0;
+  // Bidirectional live auto-calculator for the form
+  function recalcValues(triggerSource) {
+    let units = parseFloat(document.getElementById('assetUnits').value) || 0;
+    let buyNav = parseFloat(document.getElementById('assetBuyNAV').value) || 0;
+    let currentNav = parseFloat(document.getElementById('assetCurrentNAV').value) || 0;
+    let cost = parseFloat(document.getElementById('assetInvestedCost').value) || 0;
+    let marketVal = parseFloat(document.getElementById('assetMarketValuation').value) || 0;
 
-    if (units && buyNav) {
-      document.getElementById('assetInvestedCost').value = (units * buyNav).toFixed(2);
+    // If user edited Total Invested Cost directly, infer Buy NAV
+    if (triggerSource === 'investedCost' && units > 0) {
+      buyNav = cost / units;
+      document.getElementById('assetBuyNAV').value = buyNav.toFixed(4);
     }
-    if (units && currentNav) {
-      document.getElementById('assetMarketValuation').value = (units * currentNav).toFixed(2);
-    } else if (units && buyNav && !currentNav) {
-      // Default market valuation to cost if current NAV is not yet known
+    // If user edited Buy NAV or Units, update Invested Cost
+    else if ((triggerSource === 'buyNav' || triggerSource === 'units') && units > 0 && buyNav > 0) {
+      cost = units * buyNav;
+      document.getElementById('assetInvestedCost').value = cost.toFixed(2);
+    }
+
+    // If user edited Market Value directly, infer Current NAV
+    if (triggerSource === 'marketVal' && units > 0) {
+      currentNav = marketVal / units;
+      document.getElementById('assetCurrentNAV').value = currentNav.toFixed(4);
+    }
+    // If user edited Current NAV, calculate Market Value
+    else if ((triggerSource === 'currentNav' || triggerSource === 'units') && units > 0 && currentNav > 0) {
+      marketVal = units * currentNav;
+      document.getElementById('assetMarketValuation').value = marketVal.toFixed(2);
+    }
+    // If current NAV not provided, default it to buyNav so market value isn't 0
+    else if (units > 0 && buyNav > 0 && !currentNav) {
+      document.getElementById('assetCurrentNAV').value = buyNav.toFixed(4);
       document.getElementById('assetMarketValuation').value = (units * buyNav).toFixed(2);
+    }
+  }
+
+  // Ensure all holdings have valid calculated numbers
+  function recalculatePortfolioBalances() {
+    portfolio.forEach(item => {
+      const units = Number(item.units) || 0;
+      let buyNav = Number(item.buyNav) || 0;
+      let currentNav = Number(item.currentNav) || 0;
+
+      if (!buyNav && item.investedCost && units) buyNav = item.investedCost / units;
+      if (!currentNav) currentNav = buyNav; // fallback
+
+      item.buyNav = buyNav;
+      item.currentNav = currentNav;
+      item.investedCost = Number(item.investedCost) || (units * buyNav);
+      item.valuation = units * currentNav;
+    });
+  }
+
+  // Instant Live NAV fetch using public AMFI API (mfapi.in)
+  async function fetchLiveNAVForField() {
+    const query = document.getElementById('assetName').value.trim();
+    if (!query) {
+      alert('Enter a Mutual Fund name first (e.g. "Parag Parikh Flexi Cap").');
+      return;
+    }
+
+    try {
+      const searchRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(query)}`);
+      const searchList = await searchRes.json();
+
+      if (!searchList || searchList.length === 0) {
+        alert('No direct scheme match found on AMFI. Please check the spelling or enter NAV manually.');
+        return;
+      }
+
+      // Pick top match or prompt if multiple
+      const scheme = searchList[0];
+      const navRes = await fetch(`https://api.mfapi.in/mf/${scheme.schemeCode}/latest`);
+      const navData = await navRes.json();
+
+      if (navData && navData.data && navData.data.length > 0) {
+        const latestNAV = parseFloat(navData.data[0].nav);
+        document.getElementById('assetCurrentNAV').value = latestNAV;
+        document.getElementById('assetName').value = scheme.schemeName;
+        recalcValues('currentNav');
+        alert(`Fetched NAV for "${scheme.schemeName}": ₹${latestNAV} (Dated: ${navData.data[0].date})`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Unable to reach live NAV service. Please enter Current NAV manually.');
+    }
+  }
+
+  // Batch refresh all MF NAVs in the portfolio
+  async function refreshAllFundNAVs() {
+    let updated = 0;
+    for (let item of portfolio) {
+      if (item.category === 'Mutual Fund') {
+        try {
+          const searchRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(item.name)}`);
+          const searchList = await searchRes.json();
+          if (searchList && searchList.length > 0) {
+            const schemeCode = searchList[0].schemeCode;
+            const navRes = await fetch(`https://api.mfapi.in/mf/${schemeCode}/latest`);
+            const navData = await navRes.json();
+            if (navData && navData.data && navData.data[0]) {
+              const liveNAV = parseFloat(navData.data[0].nav);
+              item.currentNav = liveNAV;
+              item.valuation = (item.units || 0) * liveNAV;
+              item.lastUpdated = new Date().toISOString();
+              updated++;
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to update live NAV for', item.name);
+        }
+      }
+    }
+    if (updated > 0) {
+      pushToCloud();
+      render();
+      alert(`Updated live NAVs for ${updated} Mutual Fund(s).`);
+    } else {
+      alert('No updates found or could not connect to AMFI live data.');
+    }
+  }
+
+  // Quick edit single holding NAV directly from the table
+  function quickEditNAV(id) {
+    const item = portfolio.find(a => a.id === id);
+    if (!item) return;
+
+    const newNavStr = prompt(`Enter updated Current Market NAV for ${item.name}:`, item.currentNav || item.buyNav);
+    if (newNavStr !== null) {
+      const newNav = parseFloat(newNavStr);
+      if (!isNaN(newNav) && newNav > 0) {
+        item.currentNav = newNav;
+        item.valuation = (Number(item.units) || 0) * newNav;
+        item.lastUpdated = new Date().toISOString();
+        pushToCloud();
+        render();
+      } else {
+        alert('Please enter a valid positive number for NAV.');
+      }
     }
   }
 
@@ -405,7 +538,7 @@
     alert('Credentials cached in local browser storage.');
   }
 
-  // AES-256-GCM Cryptographic Routine
+  // Cryptographic Routine
   async function getKey(pin, salt) {
     const enc = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pin), { name: "PBKDF2" }, false, ["deriveKey"]);
@@ -440,7 +573,6 @@
     return new TextDecoder().decode(decrypted);
   }
 
-  // Cloud Pull
   async function initCloudSync() {
     const binId = document.getElementById('binId').value.trim();
     const masterKey = document.getElementById('masterKey').value.trim();
@@ -472,6 +604,7 @@
         portfolio = data.record;
       }
 
+      recalculatePortfolioBalances();
       localStorage.setItem(LOCAL_CACHE, JSON.stringify(portfolio));
       render();
       setSyncStatus('Connected & Synced', '#238636');
@@ -483,7 +616,6 @@
     }
   }
 
-  // Cloud Push
   async function pushToCloud() {
     const binId = document.getElementById('binId').value.trim();
     const masterKey = document.getElementById('masterKey').value.trim();
@@ -524,7 +656,6 @@
     document.getElementById('syncStatusPill').style.background = color;
   }
 
-  // Save Transaction (Handles Buy & Sell Logic)
   function saveAssetTransaction() {
     const txType = document.getElementById('txType').value;
     const category = document.getElementById('assetCategory').value;
@@ -532,16 +663,21 @@
     const identifier = document.getElementById('assetIdentifier').value.trim();
     const owner = document.getElementById('assetOwner').value.trim() || 'Self';
     const txUnits = parseFloat(document.getElementById('assetUnits').value) || 0;
-    const buyNav = parseFloat(document.getElementById('assetBuyNAV').value) || 0;
+    let buyNav = parseFloat(document.getElementById('assetBuyNAV').value) || 0;
     let currentNav = parseFloat(document.getElementById('assetCurrentNAV').value) || 0;
+    let investedCost = parseFloat(document.getElementById('assetInvestedCost').value) || 0;
+    let valuation = parseFloat(document.getElementById('assetMarketValuation').value) || 0;
 
     if (!name) { alert('Scheme/Stock Name is mandatory.'); return; }
     if (txUnits <= 0) { alert('Please enter a valid unit quantity greater than 0.'); return; }
 
-    // If current NAV was left blank, match with purchase NAV
+    // Fallbacks if one side was left blank
+    if (!buyNav && investedCost && txUnits) buyNav = investedCost / txUnits;
+    if (!currentNav && valuation && txUnits) currentNav = valuation / txUnits;
     if (!currentNav && buyNav) currentNav = buyNav;
+    if (!valuation && txUnits && currentNav) valuation = txUnits * currentNav;
+    if (!investedCost && txUnits && buyNav) investedCost = txUnits * buyNav;
 
-    // Check if position already exists
     const existingIndex = portfolio.findIndex(a => 
       a.name.toLowerCase() === name.toLowerCase() && 
       (a.identifier || '').toLowerCase() === identifier.toLowerCase() &&
@@ -550,14 +686,13 @@
 
     if (txType === 'BUY') {
       if (existingIndex > -1) {
-        // Weighted Average Buy NAV calculation
         const item = portfolio[existingIndex];
         const oldUnits = item.units || 0;
         const oldCost = item.investedCost || (oldUnits * item.buyNav);
-        const newTxCost = txUnits * buyNav;
+        const newCost = txUnits * buyNav;
 
         const totalUnits = oldUnits + txUnits;
-        const totalCost = oldCost + newTxCost;
+        const totalCost = oldCost + newCost;
         const weightedNav = totalCost / totalUnits;
 
         item.units = totalUnits;
@@ -567,9 +702,6 @@
         item.valuation = totalUnits * item.currentNav;
         item.lastUpdated = new Date().toISOString();
       } else {
-        const investedCost = parseFloat(document.getElementById('assetInvestedCost').value) || (txUnits * buyNav);
-        const valuation = parseFloat(document.getElementById('assetMarketValuation').value) || (txUnits * currentNav);
-
         portfolio.push({
           id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
           category,
@@ -597,7 +729,6 @@
 
       const remainingUnits = item.units - txUnits;
       if (remainingUnits <= 0.0001) {
-        // Fully exited
         if (confirm(`You have redeemed all units of ${item.name}. Remove this holding from current balances?`)) {
           portfolio.splice(existingIndex, 1);
         } else {
@@ -615,7 +746,6 @@
     }
 
     toggleForm();
-    // Clear inputs
     document.getElementById('assetName').value = '';
     document.getElementById('assetIdentifier').value = '';
     document.getElementById('assetUnits').value = '';
@@ -634,7 +764,6 @@
     }
   }
 
-  // CSV Ingestion
   function handleCSV(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -654,22 +783,26 @@
           const category = row['Category'] || (row['PRAN'] ? 'NPS' : 'Mutual Fund');
 
           if (name && (val || units)) {
+            const finalUnits = units || (currentNav ? val / currentNav : 0);
+            const finalVal = val || (finalUnits * currentNav);
+
             portfolio.push({
               id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
               category: category.includes('NPS') ? 'NPS' : (category.includes('Stock') ? 'Stocks' : 'Mutual Fund'),
               name: name.trim(),
               identifier: (row['Folio Number'] || row['Folio'] || row['ISIN'] || row['PRAN'] || '').trim(),
               owner: (row['Owner'] || row['Holder'] || 'Self').trim(),
-              units: units,
-              buyNav: buyNav,
-              currentNav: currentNav || (units ? val / units : buyNav),
-              investedCost: cost,
-              valuation: val || (units * currentNav),
+              units: finalUnits,
+              buyNav: buyNav || currentNav,
+              currentNav: currentNav || (finalUnits ? finalVal / finalUnits : buyNav),
+              investedCost: cost || finalVal,
+              valuation: finalVal,
               lastUpdated: new Date().toISOString()
             });
             imported++;
           }
         });
+        recalculatePortfolioBalances();
         pushToCloud();
         alert(`Successfully imported ${imported} holdings from CSV.`);
       }
@@ -677,7 +810,6 @@
     event.target.value = '';
   }
 
-  // PDF Parser (Extracts Units and Current Value from AMC / CAS Statements)
   async function handlePDF(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -724,6 +856,7 @@
         });
 
         if (parsedCount > 0) {
+          recalculatePortfolioBalances();
           pushToCloud();
           alert(`Extracted ${parsedCount} holdings from statement PDF.`);
         } else {
@@ -743,8 +876,12 @@
     let npsVal = 0, npsCost = 0;
 
     portfolio.forEach(item => {
-      const val = Number(item.valuation) || 0;
-      const cost = Number(item.investedCost) || (Number(item.units || 0) * Number(item.buyNav || 0));
+      const units = Number(item.units) || 0;
+      const currentNav = Number(item.currentNav) || Number(item.buyNav) || 0;
+      const buyNav = Number(item.buyNav) || currentNav;
+
+      const val = Number(item.valuation) || (units * currentNav);
+      const cost = Number(item.investedCost) || (units * buyNav);
 
       if (item.category === 'Mutual Fund') {
         mfVal += val;
@@ -778,7 +915,6 @@
 
     document.getElementById('totalCurrentValue').textContent = formatINR(agg.totalVal);
     
-    // Total Unrealized P&L display
     const plSign = agg.pl >= 0 ? '+' : '';
     const plColor = agg.pl >= 0 ? 'var(--profit)' : 'var(--loss)';
     document.getElementById('unrealizedPL').innerHTML = `
@@ -803,7 +939,7 @@
     body.innerHTML = portfolio.map(item => {
       const units = Number(item.units || 0);
       const buyNav = Number(item.buyNav || 0);
-      const currentNav = Number(item.currentNav || 0);
+      const currentNav = Number(item.currentNav || buyNav || 0);
       const cost = Number(item.investedCost || (units * buyNav));
       const val = Number(item.valuation || (units * currentNav));
       const diff = val - cost;
@@ -819,7 +955,10 @@
           <td>${item.owner}</td>
           <td class="num">${units.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>
           <td class="num">${formatINR(buyNav)}</td>
-          <td class="num" style="color:var(--accent); font-weight:600;">${formatINR(currentNav)}</td>
+          <td class="num" style="color:var(--accent); font-weight:600;">
+            ${formatINR(currentNav)}
+            <button class="edit-btn" onclick="quickEditNAV('${item.id}')" title="Update NAV">✎</button>
+          </td>
           <td class="num">${formatINR(cost)}</td>
           <td class="num" style="font-weight:700;">${formatINR(val)}</td>
           <td class="num" style="color:${diffColor}; font-weight:600;">
@@ -834,7 +973,6 @@
     }).join('');
   }
 
-  // Vault Projection Export (Feeds both Invested and Current Valuations)
   function exportForMasterVault() {
     const agg = getAggregates();
     const vaultPayload = {
