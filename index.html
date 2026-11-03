@@ -4,18 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Portfolio Satellite | Market Showcase</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
   <style>
     :root {
       --bg: #0b0e14;
       --card-bg: #151922;
+      --card-sub: #1c212c;
       --border: #262c38;
       --text: #f0f6fc;
       --text-muted: #8b949e;
       --accent: #2f81f7;
+      --accent-hover: #1f6feb;
+      --success: #238636;
+      --danger: #da3633;
       --profit: #3fb950;
       --loss: #f85149;
-      --font-mono: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace;
+      --font-mono: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, Consolas, monospace;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background-color: var(--bg);
@@ -24,28 +31,142 @@
       padding: 20px;
       line-height: 1.4;
     }
-    .container { max-width: 1300px; margin: 0 auto; }
+
+    .container { max-width: 1350px; margin: 0 auto; }
+
     header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
     .brand-title { font-size: 20px; font-weight: 700; }
+    .subtitle { font-size: 12px; color: var(--text-muted); }
+
     .hero {
-      background: #161c26; border: 1px solid var(--border); border-radius: 12px;
-      padding: 20px; margin-bottom: 20px;
+      background: linear-gradient(145deg, #161c26 0%, #11151e 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
     }
-    .hero-val { font-size: 30px; font-weight: 800; font-family: var(--font-mono); margin: 6px 0; }
-    .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: rgba(137, 87, 229, 0.2); color: #bc8cff; }
-    .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
+    .hero-val {
+      font-size: 32px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      margin: 4px 0 8px 0;
+    }
+    .hero-pl {
+      font-size: 13px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+      align-items: center;
+    }
+    button, label.btn-tool {
+      background-color: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    button:hover, label.btn-tool:hover { background-color: var(--card-sub); border-color: #444c56; }
+    button.primary { background-color: var(--accent); border-color: var(--accent); color: #fff; }
+    button.primary:hover { background-color: var(--accent-hover); }
+    button.save-gh { background-color: #238636; border-color: #238636; color: #fff; }
+    button.save-gh:hover { background-color: #2ea043; }
+    input[type="file"] { display: none; }
+
+    .config-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-window {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+    }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+    input, select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    input:focus, select:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+
+    .table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow-x: auto;
+    }
     table { width: 100%; border-collapse: collapse; text-align: left; }
     th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
     th { color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
     td.num, th.num { text-align: right; font-family: var(--font-mono); }
-    button {
-      background: var(--card-bg); color: var(--text); border: 1px solid var(--border);
-      padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+    
+    .badge {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-block;
     }
-    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .badge-direct { background: rgba(137, 87, 229, 0.2); color: #bc8cff; }
+    .badge-stocks { background: rgba(35, 134, 54, 0.2); color: #7ee787; }
+    .badge-nps { background: rgba(240, 136, 62, 0.2); color: #f0883e; }
+
+    .btn-icon { background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; color: var(--text-muted); }
+    .btn-icon:hover { color: var(--text); }
   </style>
 </head>
 <body>
@@ -54,62 +175,191 @@
   <header>
     <div>
       <div class="brand-title">Portfolio Satellite (Automated)</div>
-      <div style="font-size: 12px; color: var(--text-muted);">Synced daily via GitHub Actions Backend</div>
+      <div class="subtitle">Synced daily via GitHub Actions Backend</div>
     </div>
-    <div style="display: flex; gap: 8px;">
+    <div style="display:flex; gap:8px;">
+      <button onclick="toggleConfig()">⚙️ GitHub Sync Settings</button>
       <button onclick="loadPortfolioData()">🔄 Reload Data</button>
       <button class="primary" onclick="exportForMasterVault()">Export for Master Vault</button>
     </div>
   </header>
 
+  <!-- GitHub Auto-Push Config Drawer -->
+  <div class="config-box" id="configDrawer">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+      <strong style="font-size: 14px;">Direct GitHub Write Settings (Optional)</strong>
+      <button style="padding: 2px 8px; font-size: 11px;" onclick="toggleConfig()">Close</button>
+    </div>
+    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+      Add a personal access token (with <code>repo</code> or <code>contents:write</code> scope) to save your additions directly to GitHub without manually downloading files.
+    </div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: span 2;">
+        <label>GitHub Personal Access Token (PAT)</label>
+        <input type="password" id="ghToken" placeholder="github_pat_...">
+      </div>
+    </div>
+    <div style="margin-top: 10px;">
+      <button class="primary" onclick="saveGhConfig()">Save Token Locally</button>
+    </div>
+  </div>
+
+  <!-- Metric Overview -->
   <div class="hero">
     <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Current Market Valuation</div>
     <div class="hero-val" id="totalCurrentVal">₹0.00</div>
-    <div style="font-size: 13px; font-family: var(--font-mono);" id="totalPL">Invested: ₹0.00</div>
+    <div class="hero-pl" id="totalPL">Invested: ₹0.00</div>
   </div>
 
+  <!-- Action Bar -->
+  <div class="toolbar">
+    <button class="primary" onclick="openEntryModal('NEW')">+ Add Scheme / Asset</button>
+    <label class="btn-tool">
+      Import CSV
+      <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSV(event)">
+    </label>
+    <button class="save-gh" onclick="pushChangesToGitHub()">💾 Save & Push to GitHub</button>
+    <button onclick="downloadPortfolioJSON()">⬇️ Download portfolio.json</button>
+  </div>
+
+  <!-- Holdings Grid -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
           <th>Scheme / Security</th>
           <th>Plan Type</th>
-          <th>Units</th>
+          <th>Holder</th>
+          <th class="num">Units</th>
           <th class="num">Avg Buy NAV</th>
           <th class="num">Closing NAV</th>
           <th class="num">Invested Cost</th>
           <th class="num">Current Value</th>
           <th class="num">Unrealized P&L</th>
+          <th style="text-align:center;">Actions</th>
         </tr>
       </thead>
       <tbody id="holdingsBody">
-        <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading holdings...</td></tr>
+        <tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading holdings...</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
+<!-- Modal: Add / Edit Holding -->
+<div class="modal-backdrop" id="entryModal">
+  <div class="modal-window">
+    <div class="modal-head">
+      <strong id="modalTitle" style="font-size: 16px;">Add Asset Position</strong>
+      <button class="btn-icon" onclick="closeEntryModal()">✕</button>
+    </div>
+
+    <input type="hidden" id="editHoldingId">
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Asset Category</label>
+        <select id="assetCategory">
+          <option value="Mutual Fund">Mutual Fund</option>
+          <option value="Stocks">Stocks / Equity</option>
+          <option value="NPS">National Pension System (NPS)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Plan Structure / Type</label>
+        <select id="planType">
+          <option value="Direct - Growth">Direct - Growth</option>
+          <option value="Regular - Growth">Regular - Growth</option>
+          <option value="Direct - IDCW">Direct - IDCW</option>
+          <option value="Regular - IDCW">Regular - IDCW</option>
+          <option value="Equity Stock">Equity Stock</option>
+          <option value="NPS Tier 1">NPS Tier 1</option>
+          <option value="NPS Tier 2">NPS Tier 2</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="grid-column: span 2;">
+        <label>Scheme / Stock Name</label>
+        <input type="text" id="assetName" placeholder="e.g. Parag Parikh Flexi Cap Fund">
+      </div>
+
+      <div class="form-group">
+        <label>ISIN (for Mutual Funds)</label>
+        <input type="text" id="assetISIN" placeholder="e.g. INF879O01027" style="font-family:var(--font-mono); text-transform:uppercase;">
+      </div>
+
+      <div class="form-group">
+        <label>Folio / Demat / PRAN</label>
+        <input type="text" id="assetIdentifier" placeholder="Folio No.">
+      </div>
+
+      <div class="form-group">
+        <label>Owner / Profile</label>
+        <input type="text" id="assetOwner" placeholder="e.g. Self, Spouse, Father">
+      </div>
+
+      <div class="form-group">
+        <label>Holding Units</label>
+        <input type="number" step="any" id="assetUnits" placeholder="0.000" oninput="calcFormValues()">
+      </div>
+
+      <div class="form-group">
+        <label>Avg Buy Price / NAV (₹)</label>
+        <input type="number" step="any" id="assetBuyNAV" placeholder="0.00" oninput="calcFormValues()">
+      </div>
+
+      <div class="form-group">
+        <label>Invested Cost (₹)</label>
+        <input type="number" step="any" id="assetInvestedCost" placeholder="0.00">
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+      <button onclick="closeEntryModal()">Cancel</button>
+      <button class="primary" onclick="saveAssetFromModal()">Save Position</button>
+    </div>
+  </div>
+</div>
+
 <script>
   let portfolio = [];
+  const LOCAL_CACHE_TOKEN = 'satellite_gh_pat';
 
   function formatINR(v) {
     return '₹' + Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function toggleConfig() {
+    const el = document.getElementById('configDrawer');
+    el.style.display = el.style.display === 'none' || el.style.display === '' ? 'block' : 'none';
+  }
+
+  function saveGhConfig() {
+    const token = document.getElementById('ghToken').value.trim();
+    localStorage.setItem(LOCAL_CACHE_TOKEN, token);
+    alert('GitHub Token saved locally in your browser.');
+    toggleConfig();
+  }
+
   async function loadPortfolioData() {
     try {
-      // Direct local fetch with cache-busting timestamp
       const res = await fetch('portfolio.json?t=' + Date.now());
       portfolio = await res.json();
       render();
     } catch (e) {
-      document.getElementById('holdingsBody').innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--loss); padding:24px;">Failed to load portfolio.json. Ensure file exists in repo.</td></tr>`;
+      document.getElementById('holdingsBody').innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--loss); padding:24px;">Failed to load portfolio.json.</td></tr>`;
     }
   }
 
   function render() {
     let totVal = 0, totCost = 0;
     const tbody = document.getElementById('holdingsBody');
+
+    if (!portfolio || portfolio.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 24px;">No holdings registered. Tap <strong>+ Add Scheme</strong> or import a CSV.</td></tr>`;
+      return;
+    }
 
     tbody.innerHTML = portfolio.map(item => {
       const u = Number(item.units || 0);
@@ -129,9 +379,10 @@
         <tr>
           <td>
             <strong>${item.name}</strong><br>
-            <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">ISIN: ${item.isin || '—'}</span>
+            <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">${item.isin ? 'ISIN: ' + item.isin : (item.identifier || '')}</span>
           </td>
-          <td><span class="badge">${item.planType || 'Direct'}</span></td>
+          <td><span class="badge ${item.category === 'Stocks' ? 'badge-stocks' : (item.category === 'NPS' ? 'badge-nps' : 'badge-direct')}">${item.planType || item.category}</span></td>
+          <td>${item.owner || 'Self'}</td>
           <td class="num">${u.toLocaleString('en-IN', { minimumFractionDigits: 3 })}</td>
           <td class="num">${formatINR(bNav)}</td>
           <td class="num" style="color:var(--accent); font-weight:700;">${formatINR(cNav)}</td>
@@ -140,6 +391,10 @@
           <td class="num" style="color:${plColor}; font-weight:600;">
             ${sign}${formatINR(pl)}<br>
             <span style="font-size:11px;">(${sign}${pct.toFixed(2)}%)</span>
+          </td>
+          <td style="text-align:center; white-space:nowrap;">
+            <button class="btn-icon" onclick="openEntryModal('EDIT', '${item.id}')" title="Edit">✎</button>
+            <button class="btn-icon" onclick="deleteAsset('${item.id}')" title="Delete" style="color:var(--danger);">🗑</button>
           </td>
         </tr>
       `;
@@ -156,6 +411,216 @@
         ${sign}${formatINR(netPL)} (${sign}${netPct.toFixed(2)}%)
       </span>
     `;
+  }
+
+  function calcFormValues() {
+    const units = parseFloat(document.getElementById('assetUnits').value) || 0;
+    const buyNav = parseFloat(document.getElementById('assetBuyNAV').value) || 0;
+    if (units > 0 && buyNav > 0) {
+      document.getElementById('assetInvestedCost').value = (units * buyNav).toFixed(2);
+    }
+  }
+
+  function openEntryModal(mode, id = null) {
+    const modal = document.getElementById('entryModal');
+    modal.style.display = 'flex';
+
+    if (mode === 'EDIT' && id) {
+      const item = portfolio.find(x => x.id === id);
+      if (!item) return;
+      document.getElementById('modalTitle').textContent = 'Edit Asset Holding';
+      document.getElementById('editHoldingId').value = item.id;
+      document.getElementById('assetCategory').value = item.category || 'Mutual Fund';
+      document.getElementById('planType').value = item.planType || 'Direct - Growth';
+      document.getElementById('assetName').value = item.name || '';
+      document.getElementById('assetISIN').value = item.isin || '';
+      document.getElementById('assetIdentifier').value = item.identifier || '';
+      document.getElementById('assetOwner').value = item.owner || 'Self';
+      document.getElementById('assetUnits').value = item.units || '';
+      document.getElementById('assetBuyNAV').value = item.buyNav || '';
+      document.getElementById('assetInvestedCost').value = item.investedCost || '';
+    } else {
+      document.getElementById('modalTitle').textContent = 'Add Asset Position';
+      document.getElementById('editHoldingId').value = '';
+      document.getElementById('assetCategory').value = 'Mutual Fund';
+      document.getElementById('planType').value = 'Direct - Growth';
+      document.getElementById('assetName').value = '';
+      document.getElementById('assetISIN').value = '';
+      document.getElementById('assetIdentifier').value = '';
+      document.getElementById('assetOwner').value = 'Self';
+      document.getElementById('assetUnits').value = '';
+      document.getElementById('assetBuyNAV').value = '';
+      document.getElementById('assetInvestedCost').value = '';
+    }
+  }
+
+  function closeEntryModal() {
+    document.getElementById('entryModal').style.display = 'none';
+  }
+
+  function saveAssetFromModal() {
+    const editId = document.getElementById('editHoldingId').value;
+    const category = document.getElementById('assetCategory').value;
+    const planType = document.getElementById('planType').value;
+    const name = document.getElementById('assetName').value.trim();
+    const isin = document.getElementById('assetISIN').value.trim().toUpperCase();
+    const identifier = document.getElementById('assetIdentifier').value.trim();
+    const owner = document.getElementById('assetOwner').value.trim() || 'Self';
+    const units = parseFloat(document.getElementById('assetUnits').value) || 0;
+    const buyNav = parseFloat(document.getElementById('assetBuyNAV').value) || 0;
+    const investedCost = parseFloat(document.getElementById('assetInvestedCost').value) || (units * buyNav);
+
+    if (!name) { alert('Scheme/Stock Name is mandatory.'); return; }
+    if (units <= 0) { alert('Please enter units greater than 0.'); return; }
+
+    if (editId) {
+      const idx = portfolio.findIndex(x => x.id === editId);
+      if (idx !== -1) {
+        portfolio[idx] = {
+          ...portfolio[idx],
+          category,
+          planType,
+          name,
+          isin,
+          identifier,
+          owner,
+          units,
+          buyNav,
+          investedCost,
+          valuation: units * (portfolio[idx].currentNav || buyNav)
+        };
+      }
+    } else {
+      portfolio.push({
+        id: 'ast_' + Date.now(),
+        category,
+        planType,
+        name,
+        isin,
+        identifier,
+        owner,
+        units,
+        buyNav,
+        currentNav: buyNav,
+        investedCost,
+        valuation: units * buyNav,
+        lastUpdated: ''
+      });
+    }
+
+    closeEntryModal();
+    render();
+    alert('Saved to local view. Click "Save & Push to GitHub" or "Download portfolio.json" to persist.');
+  }
+
+  function deleteAsset(id) {
+    if (confirm('Delete this holding record?')) {
+      portfolio = portfolio.filter(x => x.id !== id);
+      render();
+    }
+  }
+
+  // Bulk CSV Ingestion
+  function handleCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        let count = 0;
+        results.data.forEach(row => {
+          const name = row['Scheme Name'] || row['Security Name'] || row['Name'] || row['Scheme'];
+          const isin = (row['ISIN'] || row['isin'] || '').trim().toUpperCase();
+          const units = parseFloat(row['Units'] || row['Qty'] || 0);
+          const buyNav = parseFloat(row['BuyNAV'] || row['Avg Price'] || row['Price'] || 0);
+          const category = row['Category'] || (isin ? 'Mutual Fund' : 'Stocks');
+          const plan = row['Plan'] || 'Direct - Growth';
+
+          if (name && units > 0) {
+            portfolio.push({
+              id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
+              category,
+              planType: plan,
+              name: name.trim(),
+              isin,
+              identifier: (row['Folio'] || '').trim(),
+              owner: (row['Owner'] || 'Self').trim(),
+              units,
+              buyNav,
+              currentNav: buyNav,
+              investedCost: units * buyNav,
+              valuation: units * buyNav,
+              lastUpdated: ''
+            });
+            count++;
+          }
+        });
+        render();
+        alert(`Imported ${count} entries from CSV. Don't forget to Save & Push!`);
+      }
+    });
+    event.target.value = '';
+  }
+
+  // Download updated JSON file directly
+  function downloadPortfolioJSON() {
+    const blob = new Blob([JSON.stringify(portfolio, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'portfolio.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Direct Push to GitHub using GitHub REST API
+  async function pushChangesToGitHub() {
+    const token = localStorage.getItem(LOCAL_CACHE_TOKEN);
+    if (!token) {
+      alert('GitHub Token not configured. Open "⚙️ GitHub Sync Settings" at the top to add your token, or use "Download portfolio.json".');
+      toggleConfig();
+      return;
+    }
+
+    // Infer owner and repo from current URL: username.github.io/repo/
+    const hostParts = window.location.hostname.split('.');
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const owner = hostParts[0];
+    const repo = pathParts[0] || 'market-assets-satellite';
+
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/portfolio.json`;
+
+    try {
+      // 1. Get current file SHA
+      const getRes = await fetch(apiUrl, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github.v3+json' }
+      });
+      const fileData = await getRes.json();
+      const sha = fileData.sha;
+
+      // 2. Put updated JSON
+      const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(portfolio, null, 2))));
+      const putRes = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: 'Update portfolio holdings via web dashboard',
+          content: contentBase64,
+          sha: sha
+        })
+      });
+
+      if (!putRes.ok) throw new Error('GitHub API Error: ' + putRes.statusText);
+      alert('Successfully pushed updated portfolio to GitHub! The next scheduled Actions run will fetch closing NAVs for any new ISINs.');
+    } catch (err) {
+      alert('Failed to push to GitHub: ' + err.message);
+    }
   }
 
   function exportForMasterVault() {
@@ -185,7 +650,11 @@
     URL.revokeObjectURL(url);
   }
 
-  window.addEventListener('DOMContentLoaded', loadPortfolioData);
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedToken = localStorage.getItem(LOCAL_CACHE_TOKEN);
+    if (savedToken) document.getElementById('ghToken').value = savedToken;
+    loadPortfolioData();
+  });
 </script>
 
 </body>
