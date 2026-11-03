@@ -1,4 +1,4 @@
-```yamlname: Daily AMFI NAV Sync
+name: Daily AMFI NAV Sync
 
 on:
   schedule:
