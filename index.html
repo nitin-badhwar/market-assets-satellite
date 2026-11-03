@@ -3,221 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0d1117">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Portfolio Satellite | Market Showcase</title>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
   <style>
     :root {
       --bg: #0b0e14;
       --card-bg: #151922;
-      --card-sub: #1c212c;
       --border: #262c38;
       --text: #f0f6fc;
       --text-muted: #8b949e;
       --accent: #2f81f7;
-      --accent-hover: #1f6feb;
-      --success: #238636;
-      --danger: #da3633;
       --profit: #3fb950;
       --loss: #f85149;
-      --font-mono: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, Consolas, monospace;
+      --font-mono: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace;
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background-color: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      padding: 16px;
-      line-height: 1.4;
-      min-height: 100vh;
-    }
-
-    @media (min-width: 768px) { body { padding: 24px; } }
-    .container { max-width: 1350px; margin: 0 auto; }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
-    }
-    .brand-title { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
-    .brand-subtitle { font-size: 12px; color: var(--text-muted); }
-
-    .sync-status-box {
-      font-size: 12px;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--card-bg);
-      padding: 6px 12px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      cursor: pointer;
-    }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #e3b341; }
-
-    .hero-summary {
-      background: linear-gradient(145deg, #161c26 0%, #11151e 100%);
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      line-height: 1.4;
     }
-    .hero-top { display: flex; justify-content: space-between; align-items: flex-start; }
-    .hero-caption { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px; }
-    .hero-val {
-      font-size: 28px;
-      font-weight: 800;
-      font-family: var(--font-mono);
-      margin: 4px 0 10px 0;
-      letter-spacing: -0.5px;
+    .container { max-width: 1300px; margin: 0 auto; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 20px;
     }
-    .hero-pl-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-family: var(--font-mono);
-      font-weight: 600;
+    .brand-title { font-size: 20px; font-weight: 700; }
+    .hero {
+      background: #161c26; border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; margin-bottom: 20px;
     }
-    .hero-pl-chip.profit { background: rgba(63, 185, 80, 0.15); color: var(--profit); }
-    .hero-pl-chip.loss { background: rgba(248, 81, 73, 0.15); color: var(--loss); }
-
-    .buckets-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-    .bucket-card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-    }
-    .bucket-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .bucket-title { font-size: 13px; color: var(--text-muted); font-weight: 600; }
-    .bucket-val { font-size: 19px; font-weight: 700; font-family: var(--font-mono); }
-    .bucket-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
-
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 18px;
-      align-items: center;
-    }
-    button, label.btn-tool {
-      background-color: var(--card-bg);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 9px 15px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    button:hover, label.btn-tool:hover { background-color: var(--card-sub); border-color: #444c56; }
-    button.primary { background-color: var(--accent); border-color: var(--accent); color: #fff; }
-    button.primary:hover { background-color: var(--accent-hover); }
-    button.refresh { background-color: #1f6feb22; border-color: #1f6feb66; color: #58a6ff; }
-    button.export { background-color: #23863622; border-color: #23863666; color: #7ee787; }
-    input[type="file"] { display: none; }
-
-    .config-box {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 20px;
-      display: none;
-    }
-
-    .modal-backdrop {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(4px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 16px;
-    }
-    .modal-window {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      width: 100%;
-      max-width: 650px;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 24px;
-    }
-    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-    }
-    .form-group { display: flex; flex-direction: column; gap: 4px; }
-    .form-group label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
-    input, select {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 9px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-    }
-    input:focus, select:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
-
-    .table-container {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow-x: auto;
-    }
+    .hero-val { font-size: 30px; font-weight: 800; font-family: var(--font-mono); margin: 6px 0; }
+    .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: rgba(137, 87, 229, 0.2); color: #bc8cff; }
+    .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; text-align: left; }
     th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
-    th { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 11px; }
+    th { color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
     td.num, th.num { text-align: right; font-family: var(--font-mono); }
-    
-    .badge {
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 10px;
-      font-weight: 600;
-      display: inline-block;
+    button {
+      background: var(--card-bg); color: var(--text); border: 1px solid var(--border);
+      padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
     }
-    .badge-direct { background: rgba(137, 87, 229, 0.2); color: #bc8cff; border: 1px solid rgba(137, 87, 229, 0.4); }
-    .badge-regular { background: rgba(110, 118, 129, 0.2); color: #8b949e; border: 1px solid rgba(110, 118, 129, 0.4); }
-    .badge-stocks { background: rgba(35, 134, 54, 0.2); color: #7ee787; border: 1px solid rgba(35, 134, 54, 0.4); }
-    .badge-nps { background: rgba(240, 136, 62, 0.2); color: #f0883e; border: 1px solid rgba(240, 136, 62, 0.4); }
-
-    .scheme-name { font-weight: 600; font-size: 13px; color: var(--text); }
-    .scheme-sub { font-size: 11px; color: var(--text-muted); display: flex; gap: 8px; align-items: center; margin-top: 3px; }
-
-    .btn-icon { background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; }
-    .btn-icon:hover { background: var(--card-sub); }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   </style>
 </head>
 <body>
@@ -225,1004 +53,125 @@
 <div class="container">
   <header>
     <div>
-      <div class="brand-title">
-        <span>Portfolio Satellite</span>
-        <span style="font-size: 11px; padding: 2px 6px; background:#21262d; border-radius: 4px; color: var(--accent);">PRO</span>
-      </div>
-      <div class="brand-subtitle">Plan-Aware (Direct & Regular) &bull; Live ISIN &bull; Family Vault Sync</div>
+      <div class="brand-title">Portfolio Satellite (Automated)</div>
+      <div style="font-size: 12px; color: var(--text-muted);">Synced daily via GitHub Actions Backend</div>
     </div>
-    <div class="sync-status-box" onclick="toggleConfig()">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="syncStatus">Offline Storage</span>
+    <div style="display: flex; gap: 8px;">
+      <button onclick="loadPortfolioData()">🔄 Reload Data</button>
+      <button class="primary" onclick="exportForMasterVault()">Export for Master Vault</button>
     </div>
   </header>
 
-  <!-- Settings Drawer -->
-  <div class="config-box" id="configDrawer">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-      <strong style="font-size: 14px;">Cloud Sync & Security Credentials (JSONbin.io)</strong>
-      <button style="padding: 2px 8px; font-size: 11px;" onclick="toggleConfig()">Close</button>
-    </div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>JSONbin Bin ID</label>
-        <input type="text" id="binId" placeholder="e.g. 6724a1b...">
-      </div>
-      <div class="form-group">
-        <label>Master API Key</label>
-        <input type="password" id="masterKey" placeholder="$2a$10...">
-      </div>
-      <div class="form-group">
-        <label>Master Passphrase / PIN</label>
-        <input type="password" id="vaultPin" placeholder="AES-256 Secret (Estate Vault PIN)">
-      </div>
-    </div>
-    <div style="margin-top: 14px; display: flex; gap: 8px;">
-      <button class="primary" onclick="initCloudSync()">Connect & Pull Cloud State</button>
-      <button onclick="saveConfigLocally()">Save Keys to Browser</button>
-    </div>
+  <div class="hero">
+    <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Current Market Valuation</div>
+    <div class="hero-val" id="totalCurrentVal">₹0.00</div>
+    <div style="font-size: 13px; font-family: var(--font-mono);" id="totalPL">Invested: ₹0.00</div>
   </div>
 
-  <!-- Hero Summary -->
-  <div class="hero-summary">
-    <div class="hero-top">
-      <div>
-        <div class="hero-caption">Total Net Worth (Market Assets)</div>
-        <div class="hero-val" id="totalCurrentValue">₹0.00</div>
-      </div>
-      <button class="btn-icon" onclick="toggleBalanceMask()" title="Hide/Unhide Balances" style="font-size: 16px;">👁</button>
-    </div>
-    <div style="display: flex; flex-wrap: gap: 10px; align-items: center; margin-top: 4px;">
-      <div class="hero-pl-chip profit" id="heroPLChip">
-        <span id="plIndicator">▲</span>
-        <span id="heroPLAmount">₹0.00 (0.00%)</span>
-      </div>
-      <span style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-left: 10px;">
-        Invested: <span id="heroInvestedCost">₹0.00</span>
-      </span>
-    </div>
-  </div>
-
-  <!-- Buckets Grid -->
-  <div class="buckets-grid">
-    <div class="bucket-card">
-      <div class="bucket-head">
-        <span class="bucket-title">Mutual Funds</span>
-        <span class="badge badge-direct" id="mfCount">0 Schemes</span>
-      </div>
-      <div class="bucket-val" id="mfValue">₹0.00</div>
-      <div class="bucket-sub">Invested: <span id="mfCost">₹0.00</span></div>
-    </div>
-
-    <div class="bucket-card">
-      <div class="bucket-head">
-        <span class="bucket-title">Equities & Stocks</span>
-        <span class="badge badge-stocks" id="stocksCount">0 Securities</span>
-      </div>
-      <div class="bucket-val" id="stocksValue">₹0.00</div>
-      <div class="bucket-sub">Invested: <span id="stocksCost">₹0.00</span></div>
-    </div>
-
-    <div class="bucket-card">
-      <div class="bucket-head">
-        <span class="bucket-title">National Pension System</span>
-        <span class="badge badge-nps" id="npsCount">0 PRANs</span>
-      </div>
-      <div class="bucket-val" id="npsValue">₹0.00</div>
-      <div class="bucket-sub">Invested: <span id="npsCost">₹0.00</span></div>
-    </div>
-  </div>
-
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <button class="primary" onclick="openEntryModal('NEW')">+ Add Asset / Buy</button>
-    <button class="refresh" onclick="refreshLiveMFData()">🔄 Live NAV Sync (All MFs)</button>
-    <label class="btn-tool">
-      Import CSV
-      <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSV(event)">
-    </label>
-    <label class="btn-tool">
-      Parse Statement PDF
-      <input type="file" id="pdfFileInput" accept=".pdf" onchange="handlePDF(event)">
-    </label>
-    <button class="export" onclick="exportForMasterVault()">Export Showcase for Vault (JSON)</button>
-    <button onclick="toggleConfig()">Settings</button>
-  </div>
-
-  <!-- Holdings Grid -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
-          <th>Asset / Scheme</th>
-          <th>Type / Plan</th>
-          <th>Holder</th>
-          <th class="num">Units / Qty</th>
-          <th class="num">Avg Buy (₹)</th>
-          <th class="num">Live NAV (₹)</th>
-          <th class="num">Cost (₹)</th>
-          <th class="num">Current Value (₹)</th>
+          <th>Scheme / Security</th>
+          <th>Plan Type</th>
+          <th>Units</th>
+          <th class="num">Avg Buy NAV</th>
+          <th class="num">Closing NAV</th>
+          <th class="num">Invested Cost</th>
+          <th class="num">Current Value</th>
           <th class="num">Unrealized P&L</th>
-          <th style="text-align:center;">Actions</th>
         </tr>
       </thead>
-      <tbody id="holdingsTableBody">
-        <tr>
-          <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 32px;">
-            No holdings registered. Tap <strong>+ Add Asset</strong> or pull from cloud.
-          </td>
-        </tr>
+      <tbody id="holdingsBody">
+        <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading holdings...</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- Modal: Add / Edit Holding -->
-<div class="modal-backdrop" id="entryModal">
-  <div class="modal-window">
-    <div class="modal-head">
-      <strong id="modalTitle" style="font-size: 16px;">Add Asset Position</strong>
-      <button class="btn-icon" onclick="closeEntryModal()">✕</button>
-    </div>
-
-    <input type="hidden" id="editHoldingId">
-    <input type="hidden" id="resolvedSchemeCode">
-
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Asset Category</label>
-        <select id="assetCategory" onchange="handleCategoryChange()">
-          <option value="Mutual Fund">Mutual Fund</option>
-          <option value="Stocks">Stocks / Equity</option>
-          <option value="NPS">National Pension System (NPS)</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Plan Structure / Type</label>
-        <select id="planType">
-          <option value="Direct - Growth">Direct - Growth</option>
-          <option value="Regular - Growth">Regular - Growth</option>
-          <option value="Direct - IDCW">Direct - IDCW</option>
-          <option value="Regular - IDCW">Regular - IDCW</option>
-          <option value="Equity Stock">Equity Stock</option>
-          <option value="NPS Tier 1">NPS Tier 1</option>
-          <option value="NPS Tier 2">NPS Tier 2</option>
-        </select>
-      </div>
-
-      <div class="form-group" style="grid-column: span 2;">
-        <label>ISIN or Scheme Name</label>
-        <div style="display:flex; gap: 6px;">
-          <input type="text" id="assetISIN" placeholder="e.g. INF879O01027 or Parag Parikh Flexi Cap" style="flex:1;">
-          <button type="button" class="primary" onclick="lookupPlanSpecificNAV()" style="padding: 8px 12px;">Fetch NAV</button>
-        </div>
-      </div>
-
-      <div class="form-group" style="grid-column: span 2;">
-        <label>Verified Scheme Name</label>
-        <input type="text" id="assetName" placeholder="Auto-populated upon fetch">
-      </div>
-
-      <div class="form-group">
-        <label>Folio / Demat / PRAN ID</label>
-        <input type="text" id="assetIdentifier" placeholder="Folio No.">
-      </div>
-
-      <div class="form-group">
-        <label>Holding Owner</label>
-        <input type="text" id="assetOwner" placeholder="e.g. Self, Spouse, Father">
-      </div>
-
-      <div class="form-group">
-        <label>Holding Units</label>
-        <input type="number" step="any" id="assetUnits" placeholder="0.000" oninput="calcFormValues('units')">
-      </div>
-
-      <div class="form-group">
-        <label>Avg Purchase NAV (₹)</label>
-        <input type="number" step="any" id="assetBuyNAV" placeholder="0.00" oninput="calcFormValues('buyNav')">
-      </div>
-
-      <div class="form-group">
-        <label>Live NAV / Current Price (₹)</label>
-        <input type="number" step="any" id="assetCurrentNAV" placeholder="0.00" oninput="calcFormValues('currentNav')">
-      </div>
-
-      <div class="form-group">
-        <label>Total Invested Cost (₹)</label>
-        <input type="number" step="any" id="assetInvestedCost" placeholder="0.00" oninput="calcFormValues('cost')">
-      </div>
-
-      <div class="form-group">
-        <label>Current Market Value (₹)</label>
-        <input type="number" step="any" id="assetMarketVal" placeholder="0.00" oninput="calcFormValues('val')">
-      </div>
-    </div>
-
-    <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
-      <button onclick="closeEntryModal()">Cancel</button>
-      <button class="primary" onclick="saveAssetFromModal()">Save Position</button>
-    </div>
-  </div>
-</div>
-
 <script>
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-
   let portfolio = [];
-  let hideBalances = false;
-  let dynamicIsinMap = null;
 
-  // Pre-indexed direct lookup dictionary for top Indian Mutual Funds
-  const KNOWN_ISIN_MAP = {
-    // Parag Parikh Flexi Cap Fund
-    "INF879O01027": { code: "122639", name: "Parag Parikh Flexi Cap Fund - Direct Plan - Growth", plan: "Direct - Growth" },
-    "INF879O01019": { code: "122640", name: "Parag Parikh Flexi Cap Fund - Regular Plan - Growth", plan: "Regular - Growth" },
-    // Mirae Asset Large & Midcap Fund
-    "INF769K01EZ2": { code: "118834", name: "Mirae Asset Large & Midcap Fund - Direct Plan - Growth", plan: "Direct - Growth" },
-    "INF769K01018": { code: "107578", name: "Mirae Asset Large & Midcap Fund - Regular Plan - Growth", plan: "Regular - Growth" },
-    // Quant Small Cap Fund
-    "INF966L01AA3": { code: "120828", name: "Quant Small Cap Fund - Direct Plan - Growth", plan: "Direct - Growth" },
-    "INF966L01994": { code: "100377", name: "Quant Small Cap Fund - Regular Plan - Growth", plan: "Regular - Growth" },
-    // HDFC Mid-Cap Opportunities Fund
-    "INF179K01BE2": { code: "118989", name: "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth", plan: "Direct - Growth" },
-    "INF179K01965": { code: "105758", name: "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth", plan: "Regular - Growth" },
-    // Nippon India Small Cap Fund
-    "INF204K01L14": { code: "118778", name: "Nippon India Small Cap Fund - Direct Plan - Growth", plan: "Direct - Growth" },
-    "INF204K01889": { code: "112938", name: "Nippon India Small Cap Fund - Regular Plan - Growth", plan: "Regular - Growth" },
-    // UTI Nifty 50 Index Fund
-    "INF789F01AU0": { code: "120716", name: "UTI Nifty 50 Index Fund - Direct Plan - Growth", plan: "Direct - Growth" },
-    "INF789F01058": { code: "100650", name: "UTI Nifty 50 Index Fund - Regular Plan - Growth", plan: "Regular - Growth" }
-  };
-
-  const LOCAL_CACHE = 'satellite_market_portfolio_v8';
-  const CONFIG_STORE = 'satellite_market_config_v8';
-
-  window.addEventListener('DOMContentLoaded', () => {
-    const conf = JSON.parse(localStorage.getItem(CONFIG_STORE) || '{}');
-    if (conf.binId) document.getElementById('binId').value = conf.binId;
-    if (conf.masterKey) document.getElementById('masterKey').value = conf.masterKey;
-
-    const cached = localStorage.getItem(LOCAL_CACHE);
-    if (cached) {
-      portfolio = JSON.parse(cached);
-      normalizePortfolioHoldings();
-      renderApp();
-    }
-  });
-
-  function formatINR(val) {
-    if (hideBalances) return '₹ ••••••';
-    return '₹' + Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function formatINR(v) {
+    return '₹' + Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  function toggleBalanceMask() {
-    hideBalances = !hideBalances;
-    renderApp();
-  }
-
-  function toggleConfig() {
-    const el = document.getElementById('configDrawer');
-    el.style.display = el.style.display === 'none' || el.style.display === '' ? 'block' : 'none';
-  }
-
-  function saveConfigLocally() {
-    const binId = document.getElementById('binId').value.trim();
-    const masterKey = document.getElementById('masterKey').value.trim();
-    localStorage.setItem(CONFIG_STORE, JSON.stringify({ binId, masterKey }));
-    alert('Credentials saved in local browser sandbox.');
-  }
-
-  function detectPlanStructure(name, category) {
-    if (category === 'Stocks') return 'Equity Stock';
-    if (category === 'NPS') return 'NPS Tier 1';
-    
-    const n = name.toLowerCase();
-    const isDirect = n.includes('direct');
-    const isIDCW = n.includes('idcw') || n.includes('dividend');
-
-    if (isDirect && isIDCW) return 'Direct - IDCW';
-    if (isDirect) return 'Direct - Growth';
-    if (isIDCW) return 'Regular - IDCW';
-    return 'Regular - Growth';
-  }
-
-  function handleCategoryChange() {
-    const cat = document.getElementById('assetCategory').value;
-    const planSel = document.getElementById('planType');
-    if (cat === 'Stocks') planSel.value = 'Equity Stock';
-    else if (cat === 'NPS') planSel.value = 'NPS Tier 1';
-    else planSel.value = 'Direct - Growth';
-  }
-
-  function calcFormValues(field) {
-    let units = parseFloat(document.getElementById('assetUnits').value) || 0;
-    let buyNav = parseFloat(document.getElementById('assetBuyNAV').value) || 0;
-    let currentNav = parseFloat(document.getElementById('assetCurrentNAV').value) || 0;
-    let cost = parseFloat(document.getElementById('assetInvestedCost').value) || 0;
-    let val = parseFloat(document.getElementById('assetMarketVal').value) || 0;
-
-    if (field === 'cost' && units > 0) {
-      document.getElementById('assetBuyNAV').value = (cost / units).toFixed(4);
-    } else if ((field === 'buyNav' || field === 'units') && units > 0 && buyNav > 0) {
-      document.getElementById('assetInvestedCost').value = (units * buyNav).toFixed(2);
-    }
-
-    if (field === 'val' && units > 0) {
-      document.getElementById('assetCurrentNAV').value = (val / units).toFixed(4);
-    } else if ((field === 'currentNav' || field === 'units') && units > 0 && currentNav > 0) {
-      document.getElementById('assetMarketVal').value = (units * currentNav).toFixed(2);
-    } else if (units > 0 && buyNav > 0 && !currentNav) {
-      document.getElementById('assetCurrentNAV').value = buyNav.toFixed(4);
-      document.getElementById('assetMarketVal').value = (units * buyNav).toFixed(2);
-    }
-  }
-
-  function openEntryModal(mode, id = null) {
-    const modal = document.getElementById('entryModal');
-    modal.style.display = 'flex';
-
-    if (mode === 'EDIT' && id) {
-      const item = portfolio.find(x => x.id === id);
-      if (!item) return;
-      document.getElementById('modalTitle').textContent = 'Edit Asset Holding';
-      document.getElementById('editHoldingId').value = item.id;
-      document.getElementById('resolvedSchemeCode').value = item.amfiCode || '';
-      document.getElementById('assetCategory').value = item.category;
-      document.getElementById('planType').value = item.planType || detectPlanStructure(item.name, item.category);
-      document.getElementById('assetISIN').value = item.isin || item.amfiCode || item.name;
-      document.getElementById('assetName').value = item.name;
-      document.getElementById('assetIdentifier').value = item.identifier || '';
-      document.getElementById('assetOwner').value = item.owner || 'Self';
-      document.getElementById('assetUnits').value = item.units;
-      document.getElementById('assetBuyNAV').value = item.buyNav;
-      document.getElementById('assetCurrentNAV').value = item.currentNav;
-      document.getElementById('assetInvestedCost').value = item.investedCost;
-      document.getElementById('assetMarketVal').value = item.valuation;
-    } else {
-      document.getElementById('modalTitle').textContent = 'Add Asset Position';
-      document.getElementById('editHoldingId').value = '';
-      document.getElementById('resolvedSchemeCode').value = '';
-      document.getElementById('assetCategory').value = 'Mutual Fund';
-      document.getElementById('planType').value = 'Direct - Growth';
-      document.getElementById('assetISIN').value = '';
-      document.getElementById('assetName').value = '';
-      document.getElementById('assetIdentifier').value = '';
-      document.getElementById('assetOwner').value = 'Self';
-      document.getElementById('assetUnits').value = '';
-      document.getElementById('assetBuyNAV').value = '';
-      document.getElementById('assetCurrentNAV').value = '';
-      document.getElementById('assetInvestedCost').value = '';
-      document.getElementById('assetMarketVal').value = '';
-    }
-  }
-
-  function closeEntryModal() {
-    document.getElementById('entryModal').style.display = 'none';
-  }
-
-  // Load and cache full scheme list mapping on-demand if ISIN not in pre-indexed dictionary
-  async function resolveIsinToSchemeCode(isin) {
-    const cleanIsin = isin.toUpperCase().trim();
-    if (KNOWN_ISIN_MAP[cleanIsin]) {
-      return KNOWN_ISIN_MAP[cleanIsin];
-    }
-
-    if (!dynamicIsinMap) {
-      const cached = sessionStorage.getItem('mf_isin_cache');
-      if (cached) {
-        try { dynamicIsinMap = JSON.parse(cached); } catch(e){}
-      }
-    }
-
-    if (dynamicIsinMap && dynamicIsinMap[cleanIsin]) {
-      return dynamicIsinMap[cleanIsin];
-    }
-
-    // Pull lightweight scheme catalog from MFAPI
+  async function loadPortfolioData() {
     try {
-      setSyncStatus('Resolving ISIN...', '#e3b341');
-      const res = await fetch('https://api.mfapi.in/mf');
-      const list = await res.json();
-      dynamicIsinMap = {};
-
-      for (let item of list) {
-        if (item.isinGrowth) dynamicIsinMap[item.isinGrowth.toUpperCase()] = { code: String(item.schemeCode), name: item.schemeName, plan: "Growth" };
-        if (item.isinDivReinvestment) dynamicIsinMap[item.isinDivReinvestment.toUpperCase()] = { code: String(item.schemeCode), name: item.schemeName, plan: "IDCW" };
-      }
-
-      sessionStorage.setItem('mf_isin_cache', JSON.stringify(dynamicIsinMap));
-      if (dynamicIsinMap[cleanIsin]) return dynamicIsinMap[cleanIsin];
-    } catch(err) {
-      console.warn('Could not pull master scheme catalog', err);
-    }
-
-    return null;
-  }
-
-  // Plan-Specific NAV Search (Direct vs Regular Guarantee)
-  async function fetchNavForQuery(query, desiredPlan) {
-    const q = query.trim();
-    if (!q) return null;
-
-    // 1. If input is an ISIN (starts with INF)
-    if (/^INF[A-Z0-9]{9}$/i.test(q)) {
-      const isinMatch = await resolveIsinToSchemeCode(q);
-      if (isinMatch && isinMatch.code) {
-        try {
-          const res = await fetch(`https://api.mfapi.in/mf/${isinMatch.code}/latest`);
-          const json = await res.json();
-          if (json && json.data && json.data[0]) {
-            return {
-              name: json.meta.scheme_name,
-              nav: parseFloat(json.data[0].nav),
-              code: isinMatch.code,
-              date: json.data[0].date
-            };
-          }
-        } catch(e) {}
-      }
-    }
-
-    // 2. Direct Scheme Code numerical lookup
-    if (/^\d{5,7}$/.test(q)) {
-      try {
-        const res = await fetch(`https://api.mfapi.in/mf/${q}/latest`);
-        const json = await res.json();
-        if (json && json.data && json.data[0]) {
-          return {
-            name: json.meta.scheme_name,
-            nav: parseFloat(json.data[0].nav),
-            code: q,
-            date: json.data[0].date
-          };
-        }
-      } catch (e) {
-        console.warn('Numeric lookup failed for code', q);
-      }
-    }
-
-    // 3. Name or Scheme Search with strict Plan Matching
-    try {
-      const cleanSearchQuery = q.replace(/mutual\s*fund|direct|regular|growth|idcw|dividend|plan|-/gi, ' ').trim();
-      const searchRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(cleanSearchQuery)}`);
-      const list = await searchRes.json();
-
-      if (list && list.length > 0) {
-        const wantDirect = desiredPlan.toLowerCase().includes('direct');
-        const wantIDCW = desiredPlan.toLowerCase().includes('idcw');
-
-        // Filter through candidates to find the one matching user's exact plan choice
-        let matched = list.find(s => {
-          const sName = s.schemeName.toLowerCase();
-          const isDirect = sName.includes('direct');
-          const isIDCW = sName.includes('idcw') || sName.includes('dividend');
-          return (isDirect === wantDirect) && (isIDCW === wantIDCW);
-        });
-
-        // Fallback: match at least Direct vs Regular
-        if (!matched) {
-          matched = list.find(s => {
-            const sName = s.schemeName.toLowerCase();
-            return sName.includes('direct') === wantDirect;
-          });
-        }
-
-        if (!matched) matched = list[0];
-
-        const res = await fetch(`https://api.mfapi.in/mf/${matched.schemeCode}/latest`);
-        const json = await res.json();
-        if (json && json.data && json.data[0]) {
-          return {
-            name: json.meta.scheme_name,
-            nav: parseFloat(json.data[0].nav),
-            code: matched.schemeCode,
-            date: json.data[0].date
-          };
-        }
-      }
+      // Direct local fetch with cache-busting timestamp
+      const res = await fetch('portfolio.json?t=' + Date.now());
+      portfolio = await res.json();
+      render();
     } catch (e) {
-      console.warn('Search lookup failed for query', q);
-    }
-
-    return null;
-  }
-
-  // Lookup in modal with Plan preference awareness
-  async function lookupPlanSpecificNAV() {
-    const query = document.getElementById('assetISIN').value.trim();
-    const plan = document.getElementById('planType').value;
-
-    if (!query) {
-      alert('Please enter a Scheme Name or ISIN.');
-      return;
-    }
-
-    setSyncStatus('Fetching NAV...', '#e3b341');
-
-    const result = await fetchNavForQuery(query, plan);
-    if (result) {
-      document.getElementById('assetCurrentNAV').value = result.nav;
-      document.getElementById('assetName').value = result.name;
-      document.getElementById('resolvedSchemeCode').value = result.code;
-      document.getElementById('planType').value = detectPlanStructure(result.name, 'Mutual Fund');
-      calcFormValues('currentNav');
-      setSyncStatus('Online', '#238636');
-      alert(`Success!\nMatched Plan: ${result.name}\nLive NAV: ₹${result.nav} (Dated: ${result.date})`);
-    } else {
-      setSyncStatus('Not Found', '#da3633');
-      alert(`Could not find a matching ${plan} scheme for "${query}". Check spelling or enter NAV manually.`);
+      document.getElementById('holdingsBody').innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--loss); padding:24px;">Failed to load portfolio.json. Ensure file exists in repo.</td></tr>`;
     }
   }
 
-  // Refresh All Mutual Funds respecting their saved plan
-  async function refreshLiveMFData() {
-    const mfs = portfolio.filter(p => p.category === 'Mutual Fund');
-    if (mfs.length === 0) {
-      alert('No Mutual Fund holdings present in tracker.');
-      return;
-    }
-
-    setSyncStatus('Refreshing...', '#e3b341');
-    let updated = 0;
-
-    for (let item of mfs) {
-      const query = item.amfiCode || item.isin || item.name;
-      const res = await fetchNavForQuery(query, item.planType || 'Direct - Growth');
-      if (res && res.nav) {
-        item.currentNav = res.nav;
-        if (!item.amfiCode && res.code) item.amfiCode = res.code;
-        item.valuation = (item.units || 0) * res.nav;
-        item.lastUpdated = new Date().toISOString();
-        updated++;
-      }
-    }
-
-    pushToCloud();
-    renderApp();
-    setSyncStatus('Online', '#238636');
-    alert(`Live Sync Complete: Updated ${updated} of ${mfs.length} Mutual Fund positions matching their Direct/Regular plans.`);
-  }
-
-  function saveAssetFromModal() {
-    const editId = document.getElementById('editHoldingId').value;
-    const category = document.getElementById('assetCategory').value;
-    const planType = document.getElementById('planType').value;
-    const isinInput = document.getElementById('assetISIN').value.trim();
-    const resolvedCode = document.getElementById('resolvedSchemeCode').value.trim();
-    const name = document.getElementById('assetName').value.trim();
-    const identifier = document.getElementById('assetIdentifier').value.trim();
-    const owner = document.getElementById('assetOwner').value.trim() || 'Self';
-    const units = parseFloat(document.getElementById('assetUnits').value) || 0;
-    let buyNav = parseFloat(document.getElementById('assetBuyNAV').value) || 0;
-    let currentNav = parseFloat(document.getElementById('assetCurrentNAV').value) || 0;
-    let investedCost = parseFloat(document.getElementById('assetInvestedCost').value) || 0;
-    let valuation = parseFloat(document.getElementById('assetMarketVal').value) || 0;
-
-    if (!name && !isinInput) { alert('Scheme Name is mandatory.'); return; }
-    if (units <= 0) { alert('Please enter units greater than 0.'); return; }
-
-    const finalName = name || isinInput;
-    const isin = isinInput.toUpperCase().startsWith('INF') ? isinInput.toUpperCase() : '';
-
-    if (!currentNav && buyNav) currentNav = buyNav;
-    if (!buyNav && currentNav) buyNav = currentNav;
-    if (!investedCost) investedCost = units * buyNav;
-    if (!valuation) valuation = units * currentNav;
-
-    if (editId) {
-      const idx = portfolio.findIndex(x => x.id === editId);
-      if (idx !== -1) {
-        portfolio[idx] = {
-          ...portfolio[idx],
-          category,
-          planType,
-          isin: isin || portfolio[idx].isin || '',
-          amfiCode: resolvedCode || portfolio[idx].amfiCode || '',
-          name: finalName,
-          identifier,
-          owner,
-          units,
-          buyNav,
-          currentNav,
-          investedCost,
-          valuation,
-          lastUpdated: new Date().toISOString()
-        };
-      }
-    } else {
-      portfolio.push({
-        id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
-        category,
-        planType,
-        isin: isin,
-        amfiCode: resolvedCode || '',
-        name: finalName,
-        identifier,
-        owner,
-        units,
-        buyNav,
-        currentNav,
-        investedCost,
-        valuation,
-        lastUpdated: new Date().toISOString()
-      });
-    }
-
-    closeEntryModal();
-    pushToCloud();
-  }
-
-  function deleteAsset(id) {
-    const item = portfolio.find(x => x.id === id);
-    if (confirm(`Remove "${item ? item.name : 'this holding'}"?`)) {
-      portfolio = portfolio.filter(x => x.id !== id);
-      pushToCloud();
-    }
-  }
-
-  function normalizePortfolioHoldings() {
-    portfolio.forEach(item => {
-      if (!item.planType) item.planType = detectPlanStructure(item.name, item.category);
-      item.units = Number(item.units) || 0;
-      item.buyNav = Number(item.buyNav) || (item.units ? item.investedCost / item.units : 0);
-      item.currentNav = Number(item.currentNav) || item.buyNav;
-      item.investedCost = Number(item.investedCost) || (item.units * item.buyNav);
-      item.valuation = Number(item.valuation) || (item.units * item.currentNav);
-    });
-  }
-
-  function handleCSV(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        let count = 0;
-        results.data.forEach(row => {
-          const name = row['Scheme Name'] || row['Security Name'] || row['Scheme'] || row['Particulars'] || row['name'];
-          const isin = (row['ISIN'] || row['isin'] || row['ISIN Number'] || '').toUpperCase().trim();
-          const val = parseFloat(row['Current Value'] || row['Valuation'] || row['Market Value'] || row['Value'] || 0);
-          const units = parseFloat(row['Units'] || row['Qty'] || row['Quantity'] || 0);
-          const currentNav = parseFloat(row['NAV'] || row['Current NAV'] || row['Price'] || 0);
-          const buyNav = parseFloat(row['Purchase NAV'] || row['Buy Price'] || row['Avg Cost'] || currentNav || 0);
-          const cost = parseFloat(row['Invested Value'] || row['Cost'] || (units * buyNav) || 0);
-          const category = row['Category'] || (row['PRAN'] ? 'NPS' : (isin && !row['Folio'] ? 'Stocks' : 'Mutual Fund'));
-
-          if (name && (val || units)) {
-            const finalUnits = units || (currentNav ? val / currentNav : 0);
-            const finalVal = val || (finalUnits * currentNav);
-            portfolio.push({
-              id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
-              category: category.includes('NPS') ? 'NPS' : (category.includes('Stock') ? 'Stocks' : 'Mutual Fund'),
-              planType: detectPlanStructure(name, category),
-              isin: isin,
-              name: name.trim(),
-              identifier: (row['Folio Number'] || row['Folio'] || isin || row['PRAN'] || '').trim(),
-              owner: (row['Owner'] || row['Holder'] || 'Self').trim(),
-              units: finalUnits,
-              buyNav: buyNav || currentNav,
-              currentNav: currentNav || (finalUnits ? finalVal / finalUnits : buyNav),
-              investedCost: cost || finalVal,
-              valuation: finalVal,
-              lastUpdated: new Date().toISOString()
-            });
-            count++;
-          }
-        });
-        normalizePortfolioHoldings();
-        pushToCloud();
-        alert(`Ingested ${count} holdings from CSV.`);
-      }
-    });
-    event.target.value = '';
-  }
-
-  async function handlePDF(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const fileReader = new FileReader();
-    fileReader.onload = async function() {
-      const typedArray = new Uint8Array(this.result);
-      try {
-        const pdf = await pdfjsLib.getDocument(typedArray).promise;
-        let fullText = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          fullText += ' ' + textContent.items.map(item => item.str).join(' ');
-        }
-
-        let extracted = 0;
-        const lines = fullText.split(/\n|\r|\s{3,}/);
-        lines.forEach(line => {
-          if (line.match(/Fund|Growth|Direct|Plan|Index|Equity/i) && line.match(/\d+\.\d{2,}/)) {
-            const nums = line.match(/\d+(?:,\d+)*(?:\.\d+)?/g);
-            const isinMatch = line.match(/INF[A-Z0-9]{9}/i);
-            if (nums && nums.length >= 2) {
-              const cleanNums = nums.map(n => parseFloat(n.replace(/,/g, '')));
-              const candVal = Math.max(...cleanNums);
-              const candUnits = cleanNums.find(n => n > 0 && n !== candVal) || 0;
-              const calcNAV = candUnits ? (candVal / candUnits) : 0;
-              const sName = line.replace(/[0-9,.]/g, '').trim().substring(0, 55);
-
-              portfolio.push({
-                id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
-                category: 'Mutual Fund',
-                planType: detectPlanStructure(sName, 'Mutual Fund'),
-                isin: isinMatch ? isinMatch[0].toUpperCase() : '',
-                name: sName,
-                identifier: 'PDF Statement',
-                owner: 'Self',
-                units: candUnits,
-                buyNav: calcNAV,
-                currentNav: calcNAV,
-                investedCost: candVal,
-                valuation: candVal,
-                lastUpdated: new Date().toISOString()
-              });
-              extracted++;
-            }
-          }
-        });
-
-        if (extracted > 0) {
-          normalizePortfolioHoldings();
-          pushToCloud();
-          alert(`Extracted ${extracted} holdings from statement PDF.`);
-        } else {
-          alert('Could not auto-extract rows. If password-protected, remove password first.');
-        }
-      } catch (err) {
-        alert('Failed to parse statement PDF.');
-      }
-    };
-    fileReader.readAsArrayBuffer(file);
-    event.target.value = '';
-  }
-
-  async function getKey(pin, salt) {
-    const enc = new TextEncoder();
-    const keyMat = await crypto.subtle.importKey("raw", enc.encode(pin), { name: "PBKDF2" }, false, ["deriveKey"]);
-    return crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
-      keyMat,
-      { name: "AES-GCM", length: 256 },
-      false,
-      ["encrypt", "decrypt"]
-    );
-  }
-
-  async function encryptPayload(plainText, pin) {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const key = await getKey(pin, salt);
-    const enc = new TextEncoder();
-    const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(plainText));
-    return {
-      ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
-      iv: btoa(String.fromCharCode(...iv)),
-      salt: btoa(String.fromCharCode(...salt))
-    };
-  }
-
-  async function decryptPayload(pkg, pin) {
-    const salt = Uint8Array.from(atob(pkg.salt), c => c.charCodeAt(0));
-    const iv = Uint8Array.from(atob(pkg.iv), c => c.charCodeAt(0));
-    const ciphertext = Uint8Array.from(atob(pkg.ciphertext), c => c.charCodeAt(0));
-    const key = await getKey(pin, salt);
-    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
-    return new TextDecoder().decode(decrypted);
-  }
-
-  async function initCloudSync() {
-    const binId = document.getElementById('binId').value.trim();
-    const masterKey = document.getElementById('masterKey').value.trim();
-    const pin = document.getElementById('vaultPin').value.trim();
-
-    if (!binId || !masterKey) {
-      alert('Bin ID & Master Key are mandatory.');
-      return;
-    }
-
-    setSyncStatus('Connecting...', '#e3b341');
-
-    try {
-      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-        headers: { 'X-Master-Key': masterKey }
-      });
-      if (!res.ok) throw new Error('Cloud pull failed: ' + res.statusText);
-      const data = await res.json();
-
-      if (data.record && data.record.ciphertext) {
-        if (!pin) {
-          alert('Encrypted cloud data detected. Please enter Master Passphrase/PIN.');
-          setSyncStatus('Locked (PIN Required)', '#da3633');
-          return;
-        }
-        const dec = await decryptPayload(data.record, pin);
-        portfolio = JSON.parse(dec);
-      } else if (Array.isArray(data.record)) {
-        portfolio = data.record;
-      }
-
-      normalizePortfolioHoldings();
-      localStorage.setItem(LOCAL_CACHE, JSON.stringify(portfolio));
-      renderApp();
-      setSyncStatus('Cloud Synced', '#238636');
-      document.getElementById('configDrawer').style.display = 'none';
-    } catch (e) {
-      console.error(e);
-      setSyncStatus('Sync Error', '#da3633');
-      alert(e.message);
-    }
-  }
-
-  async function pushToCloud() {
-    const binId = document.getElementById('binId').value.trim();
-    const masterKey = document.getElementById('masterKey').value.trim();
-    const pin = document.getElementById('vaultPin').value.trim();
-
-    localStorage.setItem(LOCAL_CACHE, JSON.stringify(portfolio));
-    renderApp();
-
-    if (!binId || !masterKey) return;
-    setSyncStatus('Saving...', '#e3b341');
-
-    try {
-      let bodyData = portfolio;
-      if (pin) {
-        bodyData = await encryptPayload(JSON.stringify(portfolio), pin);
-      }
-
-      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-Master-Key': masterKey },
-        body: JSON.stringify(bodyData)
-      });
-      if (!res.ok) throw new Error('Cloud write error');
-      setSyncStatus('Cloud Synced', '#238636');
-    } catch (e) {
-      console.error(e);
-      setSyncStatus('Sync Failed', '#da3633');
-    }
-  }
-
-  function setSyncStatus(txt, color) {
-    document.getElementById('syncStatus').textContent = txt;
-    document.getElementById('statusDot').style.background = color;
-  }
-
-  function renderApp() {
-    let mfV = 0, mfC = 0, mfN = 0;
-    let stV = 0, stC = 0, stN = 0;
-    let npV = 0, npC = 0, npN = 0;
-
-    portfolio.forEach(item => {
-      const v = Number(item.valuation) || 0;
-      const c = Number(item.investedCost) || 0;
-
-      if (item.category === 'Mutual Fund') {
-        mfV += v; mfC += c; mfN++;
-      } else if (item.category === 'Stocks') {
-        stV += v; stC += c; stN++;
-      } else if (item.category === 'NPS') {
-        npV += v; npC += c; npN++;
-      }
-    });
-
-    const totalVal = mfV + stV + npV;
-    const totalCost = mfC + stC + npC;
-    const pl = totalVal - totalCost;
-    const plPct = totalCost > 0 ? (pl / totalCost) * 100 : 0;
-
-    document.getElementById('totalCurrentValue').textContent = formatINR(totalVal);
-    document.getElementById('heroInvestedCost').textContent = formatINR(totalCost);
-
-    const chip = document.getElementById('heroPLChip');
-    const ind = document.getElementById('plIndicator');
-    const txt = document.getElementById('heroPLAmount');
-
-    if (pl >= 0) {
-      chip.className = 'hero-pl-chip profit';
-      ind.textContent = '▲';
-      txt.textContent = `+${formatINR(pl)} (+${plPct.toFixed(2)}%)`;
-    } else {
-      chip.className = 'hero-pl-chip loss';
-      ind.textContent = '▼';
-      txt.textContent = `${formatINR(pl)} (${plPct.toFixed(2)}%)`;
-    }
-
-    document.getElementById('mfValue').textContent = formatINR(mfV);
-    document.getElementById('mfCost').textContent = formatINR(mfC);
-    document.getElementById('mfCount').textContent = `${mfN} Schemes`;
-
-    document.getElementById('stocksValue').textContent = formatINR(stV);
-    document.getElementById('stocksCost').textContent = formatINR(stC);
-    document.getElementById('stocksCount').textContent = `${stN} Securities`;
-
-    document.getElementById('npsValue').textContent = formatINR(npV);
-    document.getElementById('npsCost').textContent = formatINR(npC);
-    document.getElementById('npsCount').textContent = `${npN} Portfolios`;
-
-    const tbody = document.getElementById('holdingsTableBody');
-    if (portfolio.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:32px;">No holdings registered. Tap <strong>+ Add Asset</strong> or pull from cloud.</td></tr>`;
-      return;
-    }
+  function render() {
+    let totVal = 0, totCost = 0;
+    const tbody = document.getElementById('holdingsBody');
 
     tbody.innerHTML = portfolio.map(item => {
       const u = Number(item.units || 0);
       const bNav = Number(item.buyNav || 0);
-      const cNav = Number(item.currentNav || bNav || 0);
-      const c = Number(item.investedCost || (u * bNav));
-      const v = Number(item.valuation || (u * cNav));
-      const diff = v - c;
-      const pct = c > 0 ? (diff / c) * 100 : 0;
-      const diffColor = diff >= 0 ? 'var(--profit)' : 'var(--loss)';
-      const sign = diff >= 0 ? '+' : '';
+      const cNav = Number(item.currentNav || bNav);
+      const cost = Number(item.investedCost || (u * bNav));
+      const val = Number(item.valuation || (u * cNav));
+      const pl = val - cost;
+      const pct = cost > 0 ? (pl / cost) * 100 : 0;
+      const plColor = pl >= 0 ? 'var(--profit)' : 'var(--loss)';
+      const sign = pl >= 0 ? '+' : '';
 
-      const planBadgeClass = (item.planType || '').includes('Direct') ? 'badge-direct' : 'badge-regular';
+      totVal += val;
+      totCost += cost;
 
       return `
         <tr>
           <td>
-            <div class="scheme-name">${item.name}</div>
-            <div class="scheme-sub">
-              <span>${item.identifier || 'No Folio'}</span>
-              ${item.isin ? `<span>&bull; ISIN: <code style="color:var(--text);">${item.isin}</code></span>` : ''}
-            </div>
+            <strong>${item.name}</strong><br>
+            <span style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">ISIN: ${item.isin || '—'}</span>
           </td>
-          <td>
-            <span class="badge ${item.category === 'Stocks' ? 'badge-stocks' : (item.category === 'NPS' ? 'badge-nps' : planBadgeClass)}">
-              ${item.planType || item.category}
-            </span>
-          </td>
-          <td>${item.owner}</td>
-          <td class="num">${u.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>
+          <td><span class="badge">${item.planType || 'Direct'}</span></td>
+          <td class="num">${u.toLocaleString('en-IN', { minimumFractionDigits: 3 })}</td>
           <td class="num">${formatINR(bNav)}</td>
           <td class="num" style="color:var(--accent); font-weight:700;">${formatINR(cNav)}</td>
-          <td class="num">${formatINR(c)}</td>
-          <td class="num" style="font-weight:700;">${formatINR(v)}</td>
-          <td class="num" style="color:${diffColor}; font-weight:600;">
-            ${sign}${formatINR(diff)}<br>
+          <td class="num">${formatINR(cost)}</td>
+          <td class="num" style="font-weight:700;">${formatINR(val)}</td>
+          <td class="num" style="color:${plColor}; font-weight:600;">
+            ${sign}${formatINR(pl)}<br>
             <span style="font-size:11px;">(${sign}${pct.toFixed(2)}%)</span>
-          </td>
-          <td style="text-align:center; white-space: nowrap;">
-            <button class="btn-icon" onclick="openEntryModal('EDIT', '${item.id}')" title="Edit Position">✎</button>
-            <button class="btn-icon" onclick="deleteAsset('${item.id}')" title="Delete Position" style="color:var(--danger);">🗑</button>
           </td>
         </tr>
       `;
     }).join('');
+
+    const netPL = totVal - totCost;
+    const netPct = totCost > 0 ? (netPL / totCost) * 100 : 0;
+    const sign = netPL >= 0 ? '+' : '';
+
+    document.getElementById('totalCurrentVal').textContent = formatINR(totVal);
+    document.getElementById('totalPL').innerHTML = `
+      Invested: ${formatINR(totCost)} &bull; 
+      <span style="color:${netPL >= 0 ? 'var(--profit)' : 'var(--loss)'}; font-weight:700;">
+        ${sign}${formatINR(netPL)} (${sign}${netPct.toFixed(2)}%)
+      </span>
+    `;
   }
 
   function exportForMasterVault() {
-    let mfV = 0, mfC = 0, stV = 0, stC = 0, npV = 0, npC = 0;
+    let totVal = 0, totCost = 0;
     portfolio.forEach(item => {
-      const v = Number(item.valuation) || 0;
-      const c = Number(item.investedCost) || 0;
-      if (item.category === 'Mutual Fund') { mfV += v; mfC += c; }
-      else if (item.category === 'Stocks') { stV += v; stC += c; }
-      else if (item.category === 'NPS') { npV += v; npC += c; }
+      totVal += Number(item.valuation || 0);
+      totCost += Number(item.investedCost || 0);
     });
 
     const payload = {
-      satelliteSource: "MarketAssetsSatellite",
+      satelliteSource: "MarketAssetsSatellite_GHActions",
       projectionDate: new Date().toISOString(),
       vaultBucketSummary: {
-        bucketCategory: "Market Assets (MF, Equity & Pension)",
-        totalCurrentMarketValue: mfV + stV + npV,
-        totalInvestedCost: mfC + stC + npC,
-        breakdown: [
-          { assetClass: "Mutual Funds", marketValue: mfV, investedCost: mfC },
-          { assetClass: "Equities / Stocks", marketValue: stV, investedCost: stC },
-          { assetClass: "National Pension System (NPS)", marketValue: npV, investedCost: npC }
-        ]
+        bucketCategory: "Market Assets",
+        totalCurrentMarketValue: totVal,
+        totalInvestedCost: totCost
       },
       holdings: portfolio
     };
@@ -1231,10 +180,12 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `vault-projection-market-assets-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `vault-projection-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  window.addEventListener('DOMContentLoaded', loadPortfolioData);
 </script>
 
 </body>
