@@ -3,32 +3,15 @@
     "id": "mf_1",
     "category": "Mutual Fund",
     "planType": "Direct - Growth",
-    "name": "Parag Parikh Flexi Cap Fund - Direct - Growth",
+    "name": "Parag Parikh Flexi Cap Fund - Direct Plan - Growth",
     "isin": "INF879O01027",
-    "identifier": "10122299",
+    "identifier": "12345678",
     "owner": "Self",
-    "units": 12,362.859,
-    "buyNav": 62.4168,
-    "currentNav": 9.7397,
-    "investedCost": 7,71,650.25,
-    "valuation": 11,09,439.26,
-    "lastUpdated": ""
+    "units": 500.0,
+    "buyNav": 45.2,
+    "currentNav": 89.7397,
+    "investedCost": 22600.0,
+    "valuation": 44869.85,
+    "lastUpdated": "2026-11-03 19:35:17Z"
   }
-
- {
-    "id": "mf_2",
-    "category": "Mutual Fund",
-    "planType": "Regular - Growth",
-    "name": "Helios Flexi Cap Fund - Regular - Growth",
-    "isin": "INF0R8701012",
-    "identifier": "10011692",
-    "owner": "Spouse",
-    "units": 6874.790,
-    "buyNav": 14.5503,
-    "currentNav": 15.22,
-    "investedCost": 	1,00,030.89,
-    "valuation": 1,04,634.30,
-    "lastUpdated": ""
-  }
-  
 ]
