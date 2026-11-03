@@ -229,7 +229,7 @@
         <span>Portfolio Satellite</span>
         <span style="font-size: 11px; padding: 2px 6px; background:#21262d; border-radius: 4px; color: var(--accent);">PRO</span>
       </div>
-      <div class="brand-subtitle">Plan-Aware (Direct vs Regular) &bull; AMFI Real-time &bull; Family Vault Sync</div>
+      <div class="brand-subtitle">Plan-Aware (Direct & Regular) &bull; Live ISIN &bull; Family Vault Sync</div>
     </div>
     <div class="sync-status-box" onclick="toggleConfig()">
       <div class="status-dot" id="statusDot"></div>
@@ -272,12 +272,12 @@
       </div>
       <button class="btn-icon" onclick="toggleBalanceMask()" title="Hide/Unhide Balances" style="font-size: 16px;">👁</button>
     </div>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 4px;">
+    <div style="display: flex; flex-wrap: gap: 10px; align-items: center; margin-top: 4px;">
       <div class="hero-pl-chip profit" id="heroPLChip">
         <span id="plIndicator">▲</span>
         <span id="heroPLAmount">₹0.00 (0.00%)</span>
       </div>
-      <span style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">
+      <span style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-left: 10px;">
         Invested: <span id="heroInvestedCost">₹0.00</span>
       </span>
     </div>
@@ -392,9 +392,9 @@
       </div>
 
       <div class="form-group" style="grid-column: span 2;">
-        <label>Scheme Name or ISIN</label>
+        <label>ISIN or Scheme Name</label>
         <div style="display:flex; gap: 6px;">
-          <input type="text" id="assetISIN" placeholder="e.g. Parag Parikh Flexi Cap or INF879O01027" style="flex:1;">
+          <input type="text" id="assetISIN" placeholder="e.g. INF879O01027 or Parag Parikh Flexi Cap" style="flex:1;">
           <button type="button" class="primary" onclick="lookupPlanSpecificNAV()" style="padding: 8px 12px;">Fetch NAV</button>
         </div>
       </div>
@@ -452,9 +452,32 @@
 
   let portfolio = [];
   let hideBalances = false;
+  let dynamicIsinMap = null;
 
-  const LOCAL_CACHE = 'satellite_market_portfolio_v7';
-  const CONFIG_STORE = 'satellite_market_config_v7';
+  // Pre-indexed direct lookup dictionary for top Indian Mutual Funds
+  const KNOWN_ISIN_MAP = {
+    // Parag Parikh Flexi Cap Fund
+    "INF879O01027": { code: "122639", name: "Parag Parikh Flexi Cap Fund - Direct Plan - Growth", plan: "Direct - Growth" },
+    "INF879O01019": { code: "122640", name: "Parag Parikh Flexi Cap Fund - Regular Plan - Growth", plan: "Regular - Growth" },
+    // Mirae Asset Large & Midcap Fund
+    "INF769K01EZ2": { code: "118834", name: "Mirae Asset Large & Midcap Fund - Direct Plan - Growth", plan: "Direct - Growth" },
+    "INF769K01018": { code: "107578", name: "Mirae Asset Large & Midcap Fund - Regular Plan - Growth", plan: "Regular - Growth" },
+    // Quant Small Cap Fund
+    "INF966L01AA3": { code: "120828", name: "Quant Small Cap Fund - Direct Plan - Growth", plan: "Direct - Growth" },
+    "INF966L01994": { code: "100377", name: "Quant Small Cap Fund - Regular Plan - Growth", plan: "Regular - Growth" },
+    // HDFC Mid-Cap Opportunities Fund
+    "INF179K01BE2": { code: "118989", name: "HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth", plan: "Direct - Growth" },
+    "INF179K01965": { code: "105758", name: "HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth", plan: "Regular - Growth" },
+    // Nippon India Small Cap Fund
+    "INF204K01L14": { code: "118778", name: "Nippon India Small Cap Fund - Direct Plan - Growth", plan: "Direct - Growth" },
+    "INF204K01889": { code: "112938", name: "Nippon India Small Cap Fund - Regular Plan - Growth", plan: "Regular - Growth" },
+    // UTI Nifty 50 Index Fund
+    "INF789F01AU0": { code: "120716", name: "UTI Nifty 50 Index Fund - Direct Plan - Growth", plan: "Direct - Growth" },
+    "INF789F01058": { code: "100650", name: "UTI Nifty 50 Index Fund - Regular Plan - Growth", plan: "Regular - Growth" }
+  };
+
+  const LOCAL_CACHE = 'satellite_market_portfolio_v8';
+  const CONFIG_STORE = 'satellite_market_config_v8';
 
   window.addEventListener('DOMContentLoaded', () => {
     const conf = JSON.parse(localStorage.getItem(CONFIG_STORE) || '{}');
@@ -548,7 +571,7 @@
       document.getElementById('resolvedSchemeCode').value = item.amfiCode || '';
       document.getElementById('assetCategory').value = item.category;
       document.getElementById('planType').value = item.planType || detectPlanStructure(item.name, item.category);
-      document.getElementById('assetISIN').value = item.isin || item.name;
+      document.getElementById('assetISIN').value = item.isin || item.amfiCode || item.name;
       document.getElementById('assetName').value = item.name;
       document.getElementById('assetIdentifier').value = item.identifier || '';
       document.getElementById('assetOwner').value = item.owner || 'Self';
@@ -579,12 +602,70 @@
     document.getElementById('entryModal').style.display = 'none';
   }
 
+  // Load and cache full scheme list mapping on-demand if ISIN not in pre-indexed dictionary
+  async function resolveIsinToSchemeCode(isin) {
+    const cleanIsin = isin.toUpperCase().trim();
+    if (KNOWN_ISIN_MAP[cleanIsin]) {
+      return KNOWN_ISIN_MAP[cleanIsin];
+    }
+
+    if (!dynamicIsinMap) {
+      const cached = sessionStorage.getItem('mf_isin_cache');
+      if (cached) {
+        try { dynamicIsinMap = JSON.parse(cached); } catch(e){}
+      }
+    }
+
+    if (dynamicIsinMap && dynamicIsinMap[cleanIsin]) {
+      return dynamicIsinMap[cleanIsin];
+    }
+
+    // Pull lightweight scheme catalog from MFAPI
+    try {
+      setSyncStatus('Resolving ISIN...', '#e3b341');
+      const res = await fetch('https://api.mfapi.in/mf');
+      const list = await res.json();
+      dynamicIsinMap = {};
+
+      for (let item of list) {
+        if (item.isinGrowth) dynamicIsinMap[item.isinGrowth.toUpperCase()] = { code: String(item.schemeCode), name: item.schemeName, plan: "Growth" };
+        if (item.isinDivReinvestment) dynamicIsinMap[item.isinDivReinvestment.toUpperCase()] = { code: String(item.schemeCode), name: item.schemeName, plan: "IDCW" };
+      }
+
+      sessionStorage.setItem('mf_isin_cache', JSON.stringify(dynamicIsinMap));
+      if (dynamicIsinMap[cleanIsin]) return dynamicIsinMap[cleanIsin];
+    } catch(err) {
+      console.warn('Could not pull master scheme catalog', err);
+    }
+
+    return null;
+  }
+
   // Plan-Specific NAV Search (Direct vs Regular Guarantee)
   async function fetchNavForQuery(query, desiredPlan) {
     const q = query.trim();
     if (!q) return null;
 
-    // 1. Direct Scheme Code numerical lookup
+    // 1. If input is an ISIN (starts with INF)
+    if (/^INF[A-Z0-9]{9}$/i.test(q)) {
+      const isinMatch = await resolveIsinToSchemeCode(q);
+      if (isinMatch && isinMatch.code) {
+        try {
+          const res = await fetch(`https://api.mfapi.in/mf/${isinMatch.code}/latest`);
+          const json = await res.json();
+          if (json && json.data && json.data[0]) {
+            return {
+              name: json.meta.scheme_name,
+              nav: parseFloat(json.data[0].nav),
+              code: isinMatch.code,
+              date: json.data[0].date
+            };
+          }
+        } catch(e) {}
+      }
+    }
+
+    // 2. Direct Scheme Code numerical lookup
     if (/^\d{5,7}$/.test(q)) {
       try {
         const res = await fetch(`https://api.mfapi.in/mf/${q}/latest`);
@@ -599,29 +680,6 @@
         }
       } catch (e) {
         console.warn('Numeric lookup failed for code', q);
-      }
-    }
-
-    // 2. ISIN Search Query (if it looks like an ISIN starting with INF)
-    if (/^INF[A-Z0-9]{9}$/i.test(q)) {
-      try {
-        const searchRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(q)}`);
-        const list = await searchRes.json();
-        if (list && list.length > 0) {
-          const code = list[0].schemeCode;
-          const res = await fetch(`https://api.mfapi.in/mf/${code}/latest`);
-          const json = await res.json();
-          if (json && json.data && json.data[0]) {
-            return {
-              name: json.meta.scheme_name,
-              nav: parseFloat(json.data[0].nav),
-              code: code,
-              date: json.data[0].date
-            };
-          }
-        }
-      } catch (e) {
-        console.warn('ISIN search lookup failed for query', q);
       }
     }
 
@@ -710,7 +768,6 @@
     let updated = 0;
 
     for (let item of mfs) {
-      // Prioritize numeric scheme code if resolved, else query with saved plan type
       const query = item.amfiCode || item.isin || item.name;
       const res = await fetchNavForQuery(query, item.planType || 'Direct - Growth');
       if (res && res.nav) {
@@ -747,7 +804,7 @@
     if (units <= 0) { alert('Please enter units greater than 0.'); return; }
 
     const finalName = name || isinInput;
-    const isin = isinInput.startsWith('INF') ? isinInput.toUpperCase() : '';
+    const isin = isinInput.toUpperCase().startsWith('INF') ? isinInput.toUpperCase() : '';
 
     if (!currentNav && buyNav) currentNav = buyNav;
     if (!buyNav && currentNav) buyNav = currentNav;
@@ -761,7 +818,7 @@
           ...portfolio[idx],
           category,
           planType,
-          isin,
+          isin: isin || portfolio[idx].isin || '',
           amfiCode: resolvedCode || portfolio[idx].amfiCode || '',
           name: finalName,
           identifier,
@@ -779,7 +836,7 @@
         id: 'ast_' + Date.now() + Math.random().toString(36).substr(2, 4),
         category,
         planType,
-        isin,
+        isin: isin,
         amfiCode: resolvedCode || '',
         name: finalName,
         identifier,
