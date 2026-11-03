@@ -5,18 +5,14 @@ from datetime import datetime
 
 PORTFOLIO_FILE = "portfolio.json"
 
-# Realistic browser headers to bypass server-side bot blocking
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Connection": "keep-alive"
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
 }
 
 def fetch_amfi_master():
-    """Downloads official AMFI NAV master text file."""
     url = "https://portal.amfiindia.com/spages/NAVAll.txt"
-    print("Fetching official AMFI master list...")
+    print("Connecting to portal.amfiindia.com...")
     req = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(req, timeout=30) as resp:
         content = resp.read().decode("utf-8", errors="ignore")
@@ -33,7 +29,6 @@ def fetch_amfi_master():
         isin_reinvest = parts[2].upper() if len(parts) > 2 else ""
         scheme_name = parts[3] if len(parts) > 3 else ""
 
-        # Find numeric NAV from right to left before the date column
         nav = None
         for i in range(len(parts) - 2, 2, -1):
             try:
@@ -49,28 +44,26 @@ def fetch_amfi_master():
             if isin_reinvest and isin_reinvest != "-":
                 nav_map[isin_reinvest] = entry
 
-    print(f"Indexed {len(nav_map)} active schemes by ISIN from AMFI.")
+    print(f"Loaded {len(nav_map)} active scheme ISINs from AMFI.")
     return nav_map
 
-def fetch_fallback_scheme_catalog():
-    """Fallback: Maps ISIN to scheme code using MFAPI catalog if AMFI text times out."""
-    print("Fetching backup scheme catalog...")
+def fetch_fallback_catalog():
+    print("Falling back to secondary catalog...")
     req = urllib.request.Request("https://api.mfapi.in/mf", headers=HEADERS)
     with urllib.request.urlopen(req, timeout=30) as resp:
         catalog = json.loads(resp.read().decode("utf-8"))
     
-    isin_to_code = {}
+    isin_map = {}
     for item in catalog:
         code = str(item.get("schemeCode"))
         if item.get("isinGrowth"):
-            isin_to_code[item["isinGrowth"].upper()] = code
+            isin_map[item["isinGrowth"].upper()] = code
         if item.get("isinDivReinvestment"):
-            isin_to_code[item["isinDivReinvestment"].upper()] = code
-    return isin_to_code
+            isin_map[item["isinDivReinvestment"].upper()] = code
+    return isin_map
 
-def fetch_nav_by_code(scheme_code):
-    """Fetches latest NAV for a specific AMFI code via JSON."""
-    url = f"https://api.mfapi.in/mf/{scheme_code}/latest"
+def fetch_nav_by_code(code):
+    url = f"https://api.mfapi.in/mf/{code}/latest"
     req = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(req, timeout=15) as resp:
         data = json.loads(resp.read().decode("utf-8"))
@@ -78,47 +71,52 @@ def fetch_nav_by_code(scheme_code):
             return float(data["data"][0]["nav"])
     return None
 
+def get_starter_template():
+    return [
+        {
+            "id": "mf_1",
+            "category": "Mutual Fund",
+            "planType": "Direct - Growth",
+            "name": "Parag Parikh Flexi Cap Fund - Direct Plan - Growth",
+            "isin": "INF879O01027",
+            "identifier": "12345678",
+            "owner": "Self",
+            "units": 500.0,
+            "buyNav": 45.20,
+            "currentNav": 45.20,
+            "investedCost": 22600.0,
+            "valuation": 22600.0,
+            "lastUpdated": ""
+        }
+    ]
+
 def run():
-    # 1. Initialize portfolio.json if not present
-    if not os.path.exists(PORTFOLIO_FILE):
-        print("portfolio.json not found. Initializing starter template...")
-        starter = [
-            {
-                "id": "mf_1",
-                "category": "Mutual Fund",
-                "planType": "Direct - Growth",
-                "name": "Parag Parikh Flexi Cap Fund - Direct Plan - Growth",
-                "isin": "INF879O01027",
-                "identifier": "12345678",
-                "owner": "Self",
-                "units": 500.0,
-                "buyNav": 45.20,
-                "currentNav": 45.20,
-                "investedCost": 22600.0,
-                "valuation": 22600.0,
-                "lastUpdated": ""
-            }
-        ]
+    # Load portfolio safely
+    portfolio = None
+    if os.path.exists(PORTFOLIO_FILE):
+        try:
+            with open(PORTFOLIO_FILE, "r", encoding="utf-8") as f:
+                portfolio = json.load(f)
+        except Exception as e:
+            print(f"Malformed {PORTFOLIO_FILE} detected ({e}). Resetting to valid structure...")
+
+    if not portfolio or not isinstance(portfolio, list):
+        portfolio = get_starter_template()
         with open(PORTFOLIO_FILE, "w", encoding="utf-8") as f:
-            json.dump(starter, f, indent=2)
+            json.dump(portfolio, f, indent=2)
 
-    with open(PORTFOLIO_FILE, "r", encoding="utf-8") as f:
-        portfolio = json.load(f)
-
-    # 2. Try fetching primary AMFI master
     nav_map = {}
     try:
         nav_map = fetch_amfi_master()
     except Exception as e:
-        print(f"Warning: Primary AMFI download failed ({e}). Switching to secondary resolver...")
+        print(f"AMFI primary download failed: {e}")
 
-    # 3. Fallback catalog if AMFI master failed
     backup_catalog = {}
     if not nav_map:
         try:
-            backup_catalog = fetch_fallback_scheme_catalog()
+            backup_catalog = fetch_fallback_catalog()
         except Exception as e:
-            print(f"Error fetching secondary catalog: {e}")
+            print(f"Backup catalog failed: {e}")
 
     updated = 0
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%SZ")
@@ -129,14 +127,13 @@ def run():
             continue
 
         latest_nav = None
-
-        # Check primary map
         if isin in nav_map:
             latest_nav = nav_map[isin]["nav"]
-        # Check secondary map
         elif isin in backup_catalog:
-            code = backup_catalog[isin]
-            latest_nav = fetch_nav_by_code(code)
+            try:
+                latest_nav = fetch_nav_by_code(backup_catalog[isin])
+            except Exception as e:
+                print(f"Failed to fetch NAV for {isin}: {e}")
 
         if latest_nav is not None:
             units = float(item.get("units", 0))
@@ -147,8 +144,6 @@ def run():
             item["lastUpdated"] = now_str
             updated += 1
             print(f"Updated {item.get('name')}: NAV = {latest_nav}")
-        else:
-            print(f"Skipping {item.get('name')}: No NAV found for ISIN {isin}")
 
     with open(PORTFOLIO_FILE, "w", encoding="utf-8") as f:
         json.dump(portfolio, f, indent=2)
