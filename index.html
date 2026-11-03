@@ -229,7 +229,7 @@
         <span>Portfolio Satellite</span>
         <span style="font-size: 11px; padding: 2px 6px; background:#21262d; border-radius: 4px; color: var(--accent);">PRO</span>
       </div>
-      <div class="brand-subtitle">Direct ISIN Engine &bull; AMFI Real-time &bull; Family Vault Sync</div>
+      <div class="brand-subtitle">Plan-Aware (Direct vs Regular) &bull; AMFI Real-time &bull; Family Vault Sync</div>
     </div>
     <div class="sync-status-box" onclick="toggleConfig()">
       <div class="status-dot" id="statusDot"></div>
@@ -316,7 +316,7 @@
   <!-- Toolbar -->
   <div class="toolbar">
     <button class="primary" onclick="openEntryModal('NEW')">+ Add Asset / Buy</button>
-    <button class="refresh" onclick="refreshLiveMFData()">🔄 Live NAV Sync (ISIN / AMFI)</button>
+    <button class="refresh" onclick="refreshLiveMFData()">🔄 Live NAV Sync (All MFs)</button>
     <label class="btn-tool">
       Import CSV
       <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSV(event)">
@@ -366,6 +366,7 @@
     </div>
 
     <input type="hidden" id="editHoldingId">
+    <input type="hidden" id="resolvedSchemeCode">
 
     <div class="form-grid">
       <div class="form-group">
@@ -391,16 +392,16 @@
       </div>
 
       <div class="form-group" style="grid-column: span 2;">
-        <label>ISIN or Scheme Code</label>
+        <label>Scheme Name or ISIN</label>
         <div style="display:flex; gap: 6px;">
-          <input type="text" id="assetISIN" placeholder="e.g. INF879O01027 or 122639" style="flex:1; font-family:var(--font-mono); text-transform:uppercase;">
-          <button type="button" class="primary" onclick="lookupByISIN()" style="padding: 8px 12px;">Fetch Live NAV</button>
+          <input type="text" id="assetISIN" placeholder="e.g. Parag Parikh Flexi Cap or INF879O01027" style="flex:1;">
+          <button type="button" class="primary" onclick="lookupPlanSpecificNAV()" style="padding: 8px 12px;">Fetch NAV</button>
         </div>
       </div>
 
       <div class="form-group" style="grid-column: span 2;">
-        <label>Scheme / Security Name</label>
-        <input type="text" id="assetName" placeholder="e.g. Parag Parikh Flexi Cap Fund">
+        <label>Verified Scheme Name</label>
+        <input type="text" id="assetName" placeholder="Auto-populated upon fetch">
       </div>
 
       <div class="form-group">
@@ -452,8 +453,8 @@
   let portfolio = [];
   let hideBalances = false;
 
-  const LOCAL_CACHE = 'satellite_market_portfolio_v6';
-  const CONFIG_STORE = 'satellite_market_config_v6';
+  const LOCAL_CACHE = 'satellite_market_portfolio_v7';
+  const CONFIG_STORE = 'satellite_market_config_v7';
 
   window.addEventListener('DOMContentLoaded', () => {
     const conf = JSON.parse(localStorage.getItem(CONFIG_STORE) || '{}');
@@ -544,9 +545,10 @@
       if (!item) return;
       document.getElementById('modalTitle').textContent = 'Edit Asset Holding';
       document.getElementById('editHoldingId').value = item.id;
+      document.getElementById('resolvedSchemeCode').value = item.amfiCode || '';
       document.getElementById('assetCategory').value = item.category;
       document.getElementById('planType').value = item.planType || detectPlanStructure(item.name, item.category);
-      document.getElementById('assetISIN').value = item.isin || item.amfiCode || '';
+      document.getElementById('assetISIN').value = item.isin || item.name;
       document.getElementById('assetName').value = item.name;
       document.getElementById('assetIdentifier').value = item.identifier || '';
       document.getElementById('assetOwner').value = item.owner || 'Self';
@@ -558,6 +560,7 @@
     } else {
       document.getElementById('modalTitle').textContent = 'Add Asset Position';
       document.getElementById('editHoldingId').value = '';
+      document.getElementById('resolvedSchemeCode').value = '';
       document.getElementById('assetCategory').value = 'Mutual Fund';
       document.getElementById('planType').value = 'Direct - Growth';
       document.getElementById('assetISIN').value = '';
@@ -576,8 +579,8 @@
     document.getElementById('entryModal').style.display = 'none';
   }
 
-  // Live NAV Resolution Engine via direct JSON calls
-  async function fetchNavForQuery(query) {
+  // Plan-Specific NAV Search (Direct vs Regular Guarantee)
+  async function fetchNavForQuery(query, desiredPlan) {
     const q = query.trim();
     if (!q) return null;
 
@@ -599,19 +602,64 @@
       }
     }
 
-    // 2. ISIN Search Query
+    // 2. ISIN Search Query (if it looks like an ISIN starting with INF)
+    if (/^INF[A-Z0-9]{9}$/i.test(q)) {
+      try {
+        const searchRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(q)}`);
+        const list = await searchRes.json();
+        if (list && list.length > 0) {
+          const code = list[0].schemeCode;
+          const res = await fetch(`https://api.mfapi.in/mf/${code}/latest`);
+          const json = await res.json();
+          if (json && json.data && json.data[0]) {
+            return {
+              name: json.meta.scheme_name,
+              nav: parseFloat(json.data[0].nav),
+              code: code,
+              date: json.data[0].date
+            };
+          }
+        }
+      } catch (e) {
+        console.warn('ISIN search lookup failed for query', q);
+      }
+    }
+
+    // 3. Name or Scheme Search with strict Plan Matching
     try {
-      const searchRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(q)}`);
+      const cleanSearchQuery = q.replace(/mutual\s*fund|direct|regular|growth|idcw|dividend|plan|-/gi, ' ').trim();
+      const searchRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(cleanSearchQuery)}`);
       const list = await searchRes.json();
+
       if (list && list.length > 0) {
-        const code = list[0].schemeCode;
-        const res = await fetch(`https://api.mfapi.in/mf/${code}/latest`);
+        const wantDirect = desiredPlan.toLowerCase().includes('direct');
+        const wantIDCW = desiredPlan.toLowerCase().includes('idcw');
+
+        // Filter through candidates to find the one matching user's exact plan choice
+        let matched = list.find(s => {
+          const sName = s.schemeName.toLowerCase();
+          const isDirect = sName.includes('direct');
+          const isIDCW = sName.includes('idcw') || sName.includes('dividend');
+          return (isDirect === wantDirect) && (isIDCW === wantIDCW);
+        });
+
+        // Fallback: match at least Direct vs Regular
+        if (!matched) {
+          matched = list.find(s => {
+            const sName = s.schemeName.toLowerCase();
+            return sName.includes('direct') === wantDirect;
+          });
+        }
+
+        if (!matched) matched = list[0];
+
+        const res = await fetch(`https://api.mfapi.in/mf/${matched.schemeCode}/latest`);
         const json = await res.json();
         if (json && json.data && json.data[0]) {
           return {
             name: json.meta.scheme_name,
             nav: parseFloat(json.data[0].nav),
-            code: code,
+            code: matched.schemeCode,
             date: json.data[0].date
           };
         }
@@ -623,33 +671,34 @@
     return null;
   }
 
-  // Lookup NAV by ISIN in the Entry Modal
-  async function lookupByISIN() {
-    const isinInput = document.getElementById('assetISIN').value.trim();
-    if (!isinInput) {
-      alert('Please enter an ISIN (e.g. INF879O01027) or AMFI Code (e.g. 122639).');
+  // Lookup in modal with Plan preference awareness
+  async function lookupPlanSpecificNAV() {
+    const query = document.getElementById('assetISIN').value.trim();
+    const plan = document.getElementById('planType').value;
+
+    if (!query) {
+      alert('Please enter a Scheme Name or ISIN.');
       return;
     }
 
     setSyncStatus('Fetching NAV...', '#e3b341');
 
-    const result = await fetchNavForQuery(isinInput);
+    const result = await fetchNavForQuery(query, plan);
     if (result) {
       document.getElementById('assetCurrentNAV').value = result.nav;
-      if (!document.getElementById('assetName').value.trim()) {
-        document.getElementById('assetName').value = result.name;
-      }
+      document.getElementById('assetName').value = result.name;
+      document.getElementById('resolvedSchemeCode').value = result.code;
       document.getElementById('planType').value = detectPlanStructure(result.name, 'Mutual Fund');
       calcFormValues('currentNav');
       setSyncStatus('Online', '#238636');
-      alert(`Success!\nScheme: ${result.name}\nLive NAV: ₹${result.nav} (As of ${result.date})`);
+      alert(`Success!\nMatched Plan: ${result.name}\nLive NAV: ₹${result.nav} (Dated: ${result.date})`);
     } else {
       setSyncStatus('Not Found', '#da3633');
-      alert(`Could not find live NAV for "${isinInput}". Check the code/ISIN or input NAV manually.`);
+      alert(`Could not find a matching ${plan} scheme for "${query}". Check spelling or enter NAV manually.`);
     }
   }
 
-  // Refresh All Mutual Funds in Portfolio
+  // Refresh All Mutual Funds respecting their saved plan
   async function refreshLiveMFData() {
     const mfs = portfolio.filter(p => p.category === 'Mutual Fund');
     if (mfs.length === 0) {
@@ -661,8 +710,9 @@
     let updated = 0;
 
     for (let item of mfs) {
-      const query = item.isin || item.amfiCode || item.name;
-      const res = await fetchNavForQuery(query);
+      // Prioritize numeric scheme code if resolved, else query with saved plan type
+      const query = item.amfiCode || item.isin || item.name;
+      const res = await fetchNavForQuery(query, item.planType || 'Direct - Growth');
       if (res && res.nav) {
         item.currentNav = res.nav;
         if (!item.amfiCode && res.code) item.amfiCode = res.code;
@@ -675,14 +725,15 @@
     pushToCloud();
     renderApp();
     setSyncStatus('Online', '#238636');
-    alert(`Live Sync Complete: Successfully updated ${updated} of ${mfs.length} Mutual Fund positions.`);
+    alert(`Live Sync Complete: Updated ${updated} of ${mfs.length} Mutual Fund positions matching their Direct/Regular plans.`);
   }
 
   function saveAssetFromModal() {
     const editId = document.getElementById('editHoldingId').value;
     const category = document.getElementById('assetCategory').value;
     const planType = document.getElementById('planType').value;
-    const isin = document.getElementById('assetISIN').value.trim().toUpperCase();
+    const isinInput = document.getElementById('assetISIN').value.trim();
+    const resolvedCode = document.getElementById('resolvedSchemeCode').value.trim();
     const name = document.getElementById('assetName').value.trim();
     const identifier = document.getElementById('assetIdentifier').value.trim();
     const owner = document.getElementById('assetOwner').value.trim() || 'Self';
@@ -692,8 +743,11 @@
     let investedCost = parseFloat(document.getElementById('assetInvestedCost').value) || 0;
     let valuation = parseFloat(document.getElementById('assetMarketVal').value) || 0;
 
-    if (!name) { alert('Scheme Name is mandatory.'); return; }
+    if (!name && !isinInput) { alert('Scheme Name is mandatory.'); return; }
     if (units <= 0) { alert('Please enter units greater than 0.'); return; }
+
+    const finalName = name || isinInput;
+    const isin = isinInput.startsWith('INF') ? isinInput.toUpperCase() : '';
 
     if (!currentNav && buyNav) currentNav = buyNav;
     if (!buyNav && currentNav) buyNav = currentNav;
@@ -708,7 +762,8 @@
           category,
           planType,
           isin,
-          name,
+          amfiCode: resolvedCode || portfolio[idx].amfiCode || '',
+          name: finalName,
           identifier,
           owner,
           units,
@@ -725,7 +780,8 @@
         category,
         planType,
         isin,
-        name,
+        amfiCode: resolvedCode || '',
+        name: finalName,
         identifier,
         owner,
         units,
