@@ -1,0 +1,32 @@
+name: Daily AMFI NAV Sync
+
+on:
+  schedule:
+    # Runs automatically at 21:30 IST (16:00 UTC) every Monday through Friday
+    - cron: '0 16 * * 1-5'
+  workflow_dispatch: # Allows manual trigger from the Actions tab anytime
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run AMFI Sync Script
+        run: python sync_amfi.py
+
+      - name: Commit and Push Updated Portfolio
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add portfolio.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated AMFI NAV update [skip ci]" && git push)
