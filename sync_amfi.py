@@ -71,39 +71,17 @@ def fetch_nav_by_code(code):
             return float(data["data"][0]["nav"])
     return None
 
-def get_starter_template():
-    return [
-        {
-            "id": "mf_1",
-            "category": "Mutual Fund",
-            "planType": "Direct - Growth",
-            "name": "Parag Parikh Flexi Cap Fund - Direct Plan - Growth",
-            "isin": "INF879O01027",
-            "identifier": "12345678",
-            "owner": "Self",
-            "units": 500.0,
-            "buyNav": 45.20,
-            "currentNav": 45.20,
-            "investedCost": 22600.0,
-            "valuation": 22600.0,
-            "lastUpdated": ""
-        }
-    ]
-
 def run():
-    # Load portfolio safely
-    portfolio = None
-    if os.path.exists(PORTFOLIO_FILE):
-        try:
-            with open(PORTFOLIO_FILE, "r", encoding="utf-8") as f:
-                portfolio = json.load(f)
-        except Exception as e:
-            print(f"Malformed {PORTFOLIO_FILE} detected ({e}). Resetting to valid structure...")
+    if not os.path.exists(PORTFOLIO_FILE):
+        print("portfolio.json not found.")
+        return
 
-    if not portfolio or not isinstance(portfolio, list):
-        portfolio = get_starter_template()
-        with open(PORTFOLIO_FILE, "w", encoding="utf-8") as f:
-            json.dump(portfolio, f, indent=2)
+    try:
+        with open(PORTFOLIO_FILE, "r", encoding="utf-8") as f:
+            portfolio = json.load(f)
+    except Exception as e:
+        print(f"Error reading {PORTFOLIO_FILE}: {e}")
+        return
 
     nav_map = {}
     try:
@@ -138,12 +116,20 @@ def run():
         if latest_nav is not None:
             units = float(item.get("units", 0))
             buy_nav = float(item.get("buyNav", 0))
+            old_nav = float(item.get("currentNav") or buy_nav)
+
+            # Preserve yesterday's closing rate if NAV has updated
+            if latest_nav != old_nav:
+                item["previousNav"] = old_nav
+            elif "previousNav" not in item:
+                item["previousNav"] = old_nav
+
             item["currentNav"] = latest_nav
             item["investedCost"] = round(units * buy_nav, 2)
             item["valuation"] = round(units * latest_nav, 2)
             item["lastUpdated"] = now_str
             updated += 1
-            print(f"Updated {item.get('name')}: NAV = {latest_nav}")
+            print(f"Updated {item.get('name')}: NAV = {latest_nav} (Prev: {item.get('previousNav')})")
 
     with open(PORTFOLIO_FILE, "w", encoding="utf-8") as f:
         json.dump(portfolio, f, indent=2)
