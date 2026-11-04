@@ -9,10 +9,11 @@
     "owner": "Self",
     "units": 12299.0462,
     "buyNav": 62.2569,
-    "currentNav": 89.7397,
+    "currentNav": 90.7043,
     "investedCost": 765700.49,
-    "valuation": 1103712.71627414,
-    "lastUpdated": "2026-11-03 19:35:17Z"
+    "valuation": 1115576.38,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 89.7397
   },
   {
     "id": "ast_17937971423506m6y",
@@ -24,10 +25,11 @@
     "owner": "Self",
     "units": 2196.084,
     "buyNav": 72.7099,
-    "currentNav": 72.7099,
-    "investedCost": 159677.0480316,
-    "valuation": 159677.0480316,
-    "lastUpdated": ""
+    "currentNav": 106.9,
+    "investedCost": 159677.05,
+    "valuation": 234761.38,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 72.7099
   },
   {
     "id": "ast_17937971423504fvv",
@@ -39,10 +41,11 @@
     "owner": "Self",
     "units": 3520.099,
     "buyNav": 57.83,
-    "currentNav": 57.83,
-    "investedCost": 203567.32517,
-    "valuation": 203567.32517,
-    "lastUpdated": ""
+    "currentNav": 60.16,
+    "investedCost": 203567.33,
+    "valuation": 211769.16,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 57.83
   },
   {
     "id": "ast_1793797142350e4jj",
@@ -54,10 +57,11 @@
     "owner": "Self",
     "units": 1623.214,
     "buyNav": 55.4456,
-    "currentNav": 55.4456,
-    "investedCost": 90000.07415839999,
-    "valuation": 90000.07415839999,
-    "lastUpdated": ""
+    "currentNav": 54.996,
+    "investedCost": 90000.07,
+    "valuation": 89270.28,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 55.4456
   },
   {
     "id": "ast_1793797142350z08a",
@@ -69,10 +73,11 @@
     "owner": "Self",
     "units": 3696.563,
     "buyNav": 25.708,
-    "currentNav": 25.708,
-    "investedCost": 95031.241604,
-    "valuation": 95031.241604,
-    "lastUpdated": ""
+    "currentNav": 23.6808,
+    "investedCost": 95031.24,
+    "valuation": 87537.57,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 25.708
   },
   {
     "id": "ast_1793797142350y6wd",
@@ -84,10 +89,11 @@
     "owner": "Self",
     "units": 64.036,
     "buyNav": 1360.9668,
-    "currentNav": 1360.9668,
-    "investedCost": 87150.8700048,
-    "valuation": 87150.8700048,
-    "lastUpdated": ""
+    "currentNav": 1407.3774,
+    "investedCost": 87150.87,
+    "valuation": 90122.82,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 1360.9668
   },
   {
     "id": "ast_1793797142350hsfs",
@@ -99,10 +105,11 @@
     "owner": "Self",
     "units": 12767.345,
     "buyNav": 13.3152,
-    "currentNav": 13.3152,
-    "investedCost": 169999.752144,
-    "valuation": 169999.752144,
-    "lastUpdated": ""
+    "currentNav": 19.124,
+    "investedCost": 169999.75,
+    "valuation": 244162.71,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 13.3152
   },
   {
     "id": "ast_1793797142350y69s",
@@ -114,10 +121,11 @@
     "owner": "Self",
     "units": 6874.79,
     "buyNav": 14.5504,
-    "currentNav": 14.5504,
-    "investedCost": 100030.944416,
-    "valuation": 100030.944416,
-    "lastUpdated": ""
+    "currentNav": 15.42,
+    "investedCost": 100030.94,
+    "valuation": 106009.26,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 14.5504
   },
   {
     "id": "ast_1793797142350zdlg",
@@ -129,10 +137,11 @@
     "owner": "Self",
     "units": 3120.95,
     "buyNav": 28.8374,
-    "currentNav": 28.8374,
-    "investedCost": 90000.08352999999,
-    "valuation": 90000.08352999999,
-    "lastUpdated": ""
+    "currentNav": 47.7,
+    "investedCost": 90000.08,
+    "valuation": 148869.32,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 28.8374
   },
   {
     "id": "ast_17937971423503iw9",
@@ -144,10 +153,11 @@
     "owner": "Self",
     "units": 10241.513,
     "buyNav": 9.7642,
-    "currentNav": 9.7642,
-    "investedCost": 100000.18123460001,
-    "valuation": 100000.18123460001,
-    "lastUpdated": ""
+    "currentNav": 11.08,
+    "investedCost": 100000.18,
+    "valuation": 113475.96,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 9.7642
   },
   {
     "id": "ast_17937971423507ksx",
@@ -159,10 +169,11 @@
     "owner": "Self",
     "units": 9115.314,
     "buyNav": 10.9705,
-    "currentNav": 10.9705,
-    "investedCost": 99999.552237,
-    "valuation": 99999.552237,
-    "lastUpdated": ""
+    "currentNav": 11.38,
+    "investedCost": 99999.55,
+    "valuation": 103732.27,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 10.9705
   },
   {
     "id": "ast_1793797142351lq67",
@@ -174,10 +185,11 @@
     "owner": "Self",
     "units": 2953.622,
     "buyNav": 398.43,
-    "currentNav": 398.43,
-    "investedCost": 1176811.61346,
-    "valuation": 1176811.61346,
-    "lastUpdated": ""
+    "currentNav": 423.8119,
+    "investedCost": 1176811.61,
+    "valuation": 1251780.15,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 398.43
   },
   {
     "id": "ast_17937971423515zrm",
@@ -189,10 +201,11 @@
     "owner": "Self",
     "units": 44.043,
     "buyNav": 227.0508,
-    "currentNav": 227.0508,
-    "investedCost": 9999.9983844,
-    "valuation": 9999.9983844,
-    "lastUpdated": ""
+    "currentNav": 233.94,
+    "investedCost": 10000.0,
+    "valuation": 10303.42,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 227.0508
   },
   {
     "id": "ast_1793797142351dmpf",
@@ -204,10 +217,11 @@
     "owner": "Self",
     "units": 21241.305,
     "buyNav": 9.8864,
-    "currentNav": 9.8864,
-    "investedCost": 210000.037752,
-    "valuation": 210000.037752,
-    "lastUpdated": ""
+    "currentNav": 8.1442,
+    "investedCost": 210000.04,
+    "valuation": 172993.44,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 9.8864
   },
   {
     "id": "ast_1793797142351hmdo",
@@ -219,10 +233,11 @@
     "owner": "Self",
     "units": 115926.018,
     "buyNav": 10.3514,
-    "currentNav": 10.3514,
-    "investedCost": 1199996.5827251999,
-    "valuation": 1199996.5827251999,
-    "lastUpdated": ""
+    "currentNav": 11.7626,
+    "investedCost": 1199996.58,
+    "valuation": 1363591.38,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 10.3514
   },
   {
     "id": "ast_17937971423519leg",
@@ -234,10 +249,11 @@
     "owner": "Self",
     "units": 291.777,
     "buyNav": 308.4547,
-    "currentNav": 308.4547,
-    "investedCost": 89999.9870019,
-    "valuation": 89999.9870019,
-    "lastUpdated": ""
+    "currentNav": 308.5319,
+    "investedCost": 89999.99,
+    "valuation": 90022.51,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 308.4547
   },
   {
     "id": "ast_17937971423517y01",
@@ -249,9 +265,10 @@
     "owner": "Self",
     "units": 31104.194,
     "buyNav": 9.645,
-    "currentNav": 9.645,
-    "investedCost": 299999.95113,
-    "valuation": 299999.95113,
-    "lastUpdated": ""
+    "currentNav": 10.3497,
+    "investedCost": 299999.95,
+    "valuation": 321919.08,
+    "lastUpdated": "2026-11-04 21:46:19Z",
+    "previousNav": 9.645
   }
 ]
