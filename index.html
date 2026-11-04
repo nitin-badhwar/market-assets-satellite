@@ -32,7 +32,7 @@
       line-height: 1.4;
     }
 
-    .container { max-width: 1350px; margin: 0 auto; }
+    .container { max-width: 1400px; margin: 0 auto; }
 
     header {
       display: flex;
@@ -47,20 +47,26 @@
     .brand-title { font-size: 20px; font-weight: 700; }
     .subtitle { font-size: 12px; color: var(--text-muted); }
 
-    .hero {
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .hero-card {
       background: linear-gradient(145deg, #161c26 0%, #11151e 100%);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
+      padding: 18px;
     }
+    .hero-caption { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px; }
     .hero-val {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 800;
       font-family: var(--font-mono);
-      margin: 4px 0 8px 0;
+      margin: 4px 0 6px 0;
     }
-    .hero-pl {
+    .hero-sub {
       font-size: 13px;
       font-family: var(--font-mono);
       font-weight: 600;
@@ -151,7 +157,7 @@
     }
     table { width: 100%; border-collapse: collapse; text-align: left; }
     th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
-    th { color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
+    th { color: var(--text-muted); font-size: 11px; text-transform: uppercase; white-space: nowrap; }
     td.num, th.num { text-align: right; font-family: var(--font-mono); }
     
     .badge {
@@ -178,7 +184,7 @@
       <div class="subtitle">Synced daily via GitHub Actions Backend</div>
     </div>
     <div style="display:flex; gap:8px;">
-      <button onclick="toggleConfig()">⚙️ GitHub Sync Settings</button>
+      <button onclick="toggleConfig()">⚙️ GitHub Settings</button>
       <button onclick="loadPortfolioData()">🔄 Reload Data</button>
       <button class="primary" onclick="exportForMasterVault()">Export for Master Vault</button>
     </div>
@@ -191,7 +197,7 @@
       <button style="padding: 2px 8px; font-size: 11px;" onclick="toggleConfig()">Close</button>
     </div>
     <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
-      Add a personal access token (with <code>repo</code> or <code>contents:write</code> scope) to save your additions directly to GitHub without manually downloading files.
+      Add a personal access token with <code>contents:write</code> to commit changes directly from this screen.
     </div>
     <div class="form-grid">
       <div class="form-group" style="grid-column: span 2;">
@@ -204,11 +210,25 @@
     </div>
   </div>
 
-  <!-- Metric Overview -->
-  <div class="hero">
-    <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted);">Current Market Valuation</div>
-    <div class="hero-val" id="totalCurrentVal">₹0.00</div>
-    <div class="hero-pl" id="totalPL">Invested: ₹0.00</div>
+  <!-- Metric Overview Cards -->
+  <div class="hero-grid">
+    <div class="hero-card">
+      <div class="hero-caption">Current Portfolio Valuation</div>
+      <div class="hero-val" id="totalCurrentVal">₹0.00</div>
+      <div class="hero-sub" id="totalInvestedCost" style="color:var(--text-muted);">Invested: ₹0.00</div>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-caption">1-Day Change (Today's Gain / Loss)</div>
+      <div class="hero-val" id="hero1DayVal">₹0.00</div>
+      <div class="hero-sub" id="hero1DayPct">0.00% vs Previous Close</div>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-caption">Total Unrealized P&L</div>
+      <div class="hero-val" id="heroTotalPL">₹0.00</div>
+      <div class="hero-sub" id="heroTotalPLPct">0.00% Overall</div>
+    </div>
   </div>
 
   <!-- Action Bar -->
@@ -232,15 +252,16 @@
           <th>Holder</th>
           <th class="num">Units</th>
           <th class="num">Avg Buy NAV</th>
-          <th class="num">Closing NAV</th>
+          <th class="num">Live NAV</th>
+          <th class="num">1-Day Change</th>
           <th class="num">Invested Cost</th>
           <th class="num">Current Value</th>
-          <th class="num">Unrealized P&L</th>
+          <th class="num">Total P&L</th>
           <th style="text-align:center;">Actions</th>
         </tr>
       </thead>
       <tbody id="holdingsBody">
-        <tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading holdings...</td></tr>
+        <tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 24px;">Loading holdings...</td></tr>
       </tbody>
     </table>
   </div>
@@ -348,16 +369,16 @@
       portfolio = await res.json();
       render();
     } catch (e) {
-      document.getElementById('holdingsBody').innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--loss); padding:24px;">Failed to load portfolio.json.</td></tr>`;
+      document.getElementById('holdingsBody').innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--loss); padding:24px;">Failed to load portfolio.json.</td></tr>`;
     }
   }
 
   function render() {
-    let totVal = 0, totCost = 0;
+    let totVal = 0, totCost = 0, totDayPL = 0;
     const tbody = document.getElementById('holdingsBody');
 
     if (!portfolio || portfolio.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 24px;">No holdings registered. Tap <strong>+ Add Scheme</strong> or import a CSV.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 24px;">No holdings registered. Tap <strong>+ Add Scheme</strong> or import a CSV.</td></tr>`;
       return;
     }
 
@@ -365,15 +386,26 @@
       const u = Number(item.units || 0);
       const bNav = Number(item.buyNav || 0);
       const cNav = Number(item.currentNav || bNav);
+      const pNav = Number(item.previousNav || cNav);
       const cost = Number(item.investedCost || (u * bNav));
       const val = Number(item.valuation || (u * cNav));
+
+      // Total P&L
       const pl = val - cost;
       const pct = cost > 0 ? (pl / cost) * 100 : 0;
       const plColor = pl >= 0 ? 'var(--profit)' : 'var(--loss)';
       const sign = pl >= 0 ? '+' : '';
 
+      // 1-Day P&L
+      const dayDiffNav = cNav - pNav;
+      const dayPL = dayDiffNav * u;
+      const dayPct = pNav > 0 ? (dayDiffNav / pNav) * 100 : 0;
+      const dayColor = dayPL >= 0 ? 'var(--profit)' : 'var(--loss)';
+      const daySign = dayPL >= 0 ? '+' : '';
+
       totVal += val;
       totCost += cost;
+      totDayPL += dayPL;
 
       return `
         <tr>
@@ -386,6 +418,10 @@
           <td class="num">${u.toLocaleString('en-IN', { minimumFractionDigits: 3 })}</td>
           <td class="num">${formatINR(bNav)}</td>
           <td class="num" style="color:var(--accent); font-weight:700;">${formatINR(cNav)}</td>
+          <td class="num" style="color:${dayColor}; font-weight:600;">
+            ${daySign}${formatINR(dayPL)}<br>
+            <span style="font-size:11px;">(${daySign}${dayPct.toFixed(2)}%)</span>
+          </td>
           <td class="num">${formatINR(cost)}</td>
           <td class="num" style="font-weight:700;">${formatINR(val)}</td>
           <td class="num" style="color:${plColor}; font-weight:600;">
@@ -400,17 +436,31 @@
       `;
     }).join('');
 
+    // Summary Card 1: Valuation
+    document.getElementById('totalCurrentVal').textContent = formatINR(totVal);
+    document.getElementById('totalInvestedCost').textContent = `Invested: ${formatINR(totCost)}`;
+
+    // Summary Card 2: 1-Day Change
+    const daySign = totDayPL >= 0 ? '+' : '';
+    const dayColor = totDayPL >= 0 ? 'var(--profit)' : 'var(--loss)';
+    const prevTotVal = totVal - totDayPL;
+    const dayTotPct = prevTotVal > 0 ? (totDayPL / prevTotVal) * 100 : 0;
+
+    const hero1DayVal = document.getElementById('hero1DayVal');
+    hero1DayVal.textContent = `${daySign}${formatINR(totDayPL)}`;
+    hero1DayVal.style.color = dayColor;
+    document.getElementById('hero1DayPct').textContent = `${daySign}${dayTotPct.toFixed(2)}% vs Previous Close`;
+
+    // Summary Card 3: Total P&L
     const netPL = totVal - totCost;
     const netPct = totCost > 0 ? (netPL / totCost) * 100 : 0;
-    const sign = netPL >= 0 ? '+' : '';
+    const netSign = netPL >= 0 ? '+' : '';
+    const netColor = netPL >= 0 ? 'var(--profit)' : 'var(--loss)';
 
-    document.getElementById('totalCurrentVal').textContent = formatINR(totVal);
-    document.getElementById('totalPL').innerHTML = `
-      Invested: ${formatINR(totCost)} &bull; 
-      <span style="color:${netPL >= 0 ? 'var(--profit)' : 'var(--loss)'}; font-weight:700;">
-        ${sign}${formatINR(netPL)} (${sign}${netPct.toFixed(2)}%)
-      </span>
-    `;
+    const heroTotalPL = document.getElementById('heroTotalPL');
+    heroTotalPL.textContent = `${netSign}${formatINR(netPL)}`;
+    heroTotalPL.style.color = netColor;
+    document.getElementById('heroTotalPLPct').textContent = `${netSign}${netPct.toFixed(2)}% Overall Returns`;
   }
 
   function calcFormValues() {
@@ -502,6 +552,7 @@
         units,
         buyNav,
         currentNav: buyNav,
+        previousNav: buyNav,
         investedCost,
         valuation: units * buyNav,
         lastUpdated: ''
@@ -520,7 +571,6 @@
     }
   }
 
-  // Bulk CSV Ingestion
   function handleCSV(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -550,6 +600,7 @@
               units,
               buyNav,
               currentNav: buyNav,
+              previousNav: buyNav,
               investedCost: units * buyNav,
               valuation: units * buyNav,
               lastUpdated: ''
@@ -558,13 +609,12 @@
           }
         });
         render();
-        alert(`Imported ${count} entries from CSV. Don't forget to Save & Push!`);
+        alert(`Imported ${count} entries from CSV.`);
       }
     });
     event.target.value = '';
   }
 
-  // Download updated JSON file directly
   function downloadPortfolioJSON() {
     const blob = new Blob([JSON.stringify(portfolio, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -575,32 +625,27 @@
     URL.revokeObjectURL(url);
   }
 
-  // Direct Push to GitHub using GitHub REST API
   async function pushChangesToGitHub() {
     const token = localStorage.getItem(LOCAL_CACHE_TOKEN);
     if (!token) {
-      alert('GitHub Token not configured. Open "⚙️ GitHub Sync Settings" at the top to add your token, or use "Download portfolio.json".');
+      alert('GitHub Token not configured. Open "⚙️ GitHub Settings" to add your token.');
       toggleConfig();
       return;
     }
 
-    // Infer owner and repo from current URL: username.github.io/repo/
     const hostParts = window.location.hostname.split('.');
     const pathParts = window.location.pathname.split('/').filter(Boolean);
     const owner = hostParts[0];
     const repo = pathParts[0] || 'market-assets-satellite';
-
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/portfolio.json`;
 
     try {
-      // 1. Get current file SHA
       const getRes = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github.v3+json' }
       });
       const fileData = await getRes.json();
       const sha = fileData.sha;
 
-      // 2. Put updated JSON
       const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(portfolio, null, 2))));
       const putRes = await fetch(apiUrl, {
         method: 'PUT',
@@ -610,14 +655,14 @@
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          message: 'Update portfolio holdings via web dashboard',
+          message: 'Update portfolio holdings via dashboard',
           content: contentBase64,
           sha: sha
         })
       });
 
       if (!putRes.ok) throw new Error('GitHub API Error: ' + putRes.statusText);
-      alert('Successfully pushed updated portfolio to GitHub! The next scheduled Actions run will fetch closing NAVs for any new ISINs.');
+      alert('Successfully pushed updated portfolio to GitHub!');
     } catch (err) {
       alert('Failed to push to GitHub: ' + err.message);
     }
